@@ -322,7 +322,7 @@ def peer_bgp_routes(router, peer):
 
     result = rtrname.get_peer_bgp_routes(peer)
 
-    return render_template("peerbgproutes.html", router=router, result=result, peer=peer)
+    return render_template("bgppeerroutes.html", router=router, result=result, peer=peer)
 
 @app.route("/looking_glass/<router>/bgp/<prefix>/", methods=["GET", "POST"])
 def bgp_route(router, prefix):

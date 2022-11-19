@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Looking Glass</h1>
+
+<form method =  "POST">
+    {{ form.hidden_tag() }}
+    <br>
+    {{ form.device.label}}
+    {{ form.device}}
+    <br>
+    {{ form.operation.label}}
+    {{ form.operation}}
+    {{ form.target.label}}
+    {{ form.target}}
+
+    <br>
+    <br>
+    {{ form.submit(class="btn btn-secondary") }}
+</form>
+
+{% endblock %}

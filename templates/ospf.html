@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %} BGP {%endblock%}
+
+{% block content %}
+
+{% if router and router|length %}
+<h1>OSPF on {{ router }}</h1>
+
+{% else %}
+    Full Route Table
+{% endif %}
+
+<pre>
+    {{ result }}
+</pre>
+{% endblock%}
