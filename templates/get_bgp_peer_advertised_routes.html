@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %} Advertised Routes {%endblock%}
+
+{% block content %}
+
+{% if router and router|length %}
+<h2>
+{{ router }}: BGP routes advertised to <code> {{ peer }} </code>
+</h2>
+<br>
+{% endif %}
+<pre>
+{{ result }}
+</pre>
+{% endblock %}

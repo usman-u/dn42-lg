@@ -23,9 +23,9 @@ usmanerx = net_automation.EdgeOS(
 fr_lil1 = net_automation.Vyos(
     device_type = "vyos",
     host = "10.100.100.4",
-    username = "usman", 
-    use_keys = True, 
-    key_file = r"C:\Users\Usman\.ssh\id_rsa",)
+    username = "test", 
+    password = "test", 
+    use_keys = False)
 
 # DBs
 class Devices(db.Model):
@@ -297,8 +297,42 @@ def bgp(router):
     return render_template("bgp.html", result=result, router=router, time=datetime.now())
 
 
-@app.route("/looking_glass/<router>/peerbgproutes/<peer>", methods=["GET", "POST"])
+@app.route("/looking_glass/<router>/get_bgp_peer_routes/", methods=["GET", "POST"])
+def get_bgp_peer_routes(router):
+    
+    peer = (request.args.get("peer"))
+
+    rtrname = eval(router) # gets object name, instead of string
+    
+    if not hasattr(rtrname, "SSHConnection"):  # if object doesn't 
+                                               # have SSHConnection attribute (not connected via SSH)
+        rtrname.init_ssh()                     # initialize SSHConnection     (establish tunnel)
+
+    result = rtrname.get_bgp_peer_routes(peer)
+
+    return render_template("get_bgp_peer_routes.html", router=router, result=result, peer=peer)
+
+
+@app.route("/looking_glass/<router>/get_bgp_peer_advertised_routes/", methods=["GET", "POST"])
+def get_bgp_peer_advertised_routes(router):
+    
+    peer = (request.args.get("peer"))
+
+    rtrname = eval(router) # gets object name, instead of string
+    
+    if not hasattr(rtrname, "SSHConnection"):  # if object doesn't 
+                                               # have SSHConnection attribute (not connected via SSH)
+        rtrname.init_ssh()                     # initialize SSHConnection     (establish tunnel)
+
+    result = rtrname.get_bgp_peer_advertised_routes(peer)
+
+    return render_template("get_bgp_peer_advertised_routes.html", router=router, result=result, peer=peer)
+
+
+@app.route("/looking_glass/<router>/get_bgp_peer/<peer>/", methods=["GET", "POST"])
 def get_bgp_peer(router, peer):
+
+    desc = (request.args.get("desc"))
 
     rtrname = eval(router) # gets object name, instead of string
     
@@ -308,8 +342,7 @@ def get_bgp_peer(router, peer):
 
     result = rtrname.get_bgp_peer(peer)
 
-    return render_template("get_bgp_peer.html", router=router, result=result, peer=peer)
-
+    return render_template("get_bgp_peer.html", router=router, result=result, peer=peer, desc=desc)
 
 @app.route("/looking_glass/<router>/peerbgproutes/<peer>", methods=["GET", "POST"])
 def peer_bgp_routes(router, peer):
@@ -365,6 +398,15 @@ def interfaces(router):
 
     return render_template("interfaces.html", result=result, router=router)
 
+
+@app.route("/looking_glass/<router>/summary/", methods=["GET", "POST"])
+def summary(router):
+
+    rtrname = eval(router) # gets object name, instead of string
+    
+    if not hasattr(rtrname, "SSHConnection"):  # if object doesn't 
+                                               # have SSHConnection attribute (not connected via SSH)
+        rtrname.init_ssh()                     # initialize SSHConnection     (establish tunnel)
 
 @app.errorhandler(404)
 def page_not_found(error):
