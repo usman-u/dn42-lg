@@ -14,7 +14,7 @@ Start
   ^IPv4\s+Unicast\s+Summary\s+\(VRF\s+${VRF}\):$$
   ^BGP\s+router\s+identifier\s+${ROUTER_ID},\s+[Ll]ocal\s+[Aa][Ss]\s+number\s+${LOCAL_AS}\s+vrf-id\s+\d+$$
   ^BGP\s+table\s+version\s+\d+$$
-  ^RIB\s+entries\s+\d+,\s+using\s+\d+\s+KiB\s+of\s+memory$$
+  ^RIB\s+entries\s+\d+,\s+using\s+\d+\s+[M/K]iB\s+of\s+memory$$
   ^Peers\s+\d+,\s+using\s+\d+\s+KiB\s+of\s+memory$$
   ^Peer\s+groups\s+\d+,\s+using\s+\d+\s+bytes\s+of\s+memory$$
   ^Neighbor\s+V\s+AS\s+MsgRcvd\s+MsgSent\s+TblVer\s+InQ\s+OutQ\s+Up/Down\s+State/PfxRcd\s+PfxSnt\s+Desc$$
