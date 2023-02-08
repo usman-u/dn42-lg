@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
-  <head>
+
+<head>
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,27 +13,26 @@
 
 
     <title>(Net Aut){% block title %}{% endblock %}</title>
-    
+
     <style>
         .footer {
-        background-color: #eee;
-        border-top: dotted 1px #999;
-        color: #888;
-        font-size: smaller;
-        padding: 5px;
-      }
+            background-color: #eee;
+            border-top: dotted 1px #999;
+            color: #888;
+            font-size: smaller;
+            padding: 5px;
+        }
     </style>
 
-  </head>
+</head>
 
-  <body>
+<body>
 
     {% include "navbar.html" %}
 
     <br>
     <div class="container">
-        {% block content%}
-        {% endblock%}
+        {% block content%} {% endblock%}
     </div>
     <br>
 
@@ -47,18 +47,18 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
     -->
 
-    
-    
+
+
     <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.js"></script>
     <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap5.js"></script>
 
-  {% block scripts %}{% endblock %}
+    {% block scripts %}{% endblock %}
 
 </body>
 
 <div class="footer fixed-bottom">
-    UsmanNet DN42 Looking Glass by <a href="https://blog.usman.network">blog.usman.network</a>.
-    Contact: <a href="mailto:usman@usman.network">usman@usman.network</a> or <a href="https://discord.com/users/371617715443466253">Usman#5151 on Discord</a>.
+    UsmanNet DN42 Looking Glass by <a href="https://blog.usman.network">blog.usman.network</a>. Contact: <a href="mailto:usman@usman.network">usman@usman.network</a> or <a href="https://discord.com/users/371617715443466253">Usman#5151 on Discord</a>.
 </div>
+
 </html>
