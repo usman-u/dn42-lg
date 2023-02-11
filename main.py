@@ -6,11 +6,17 @@ from wtforms.validators import DataRequired, Email, InputRequired
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from net_automation import net_automation
+from vyos_api import vyos_api
+from dotenv import load_dotenv
+import os
 
 app = Flask(__name__)                                         # create an instance of the Flask class
 app.config["SECRET_KEY"] = "fhdujghrfdjkhgdfjk"               # secret key
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sql"    # location of DB
 db = SQLAlchemy(app)                                          # inits the db, instance of SQLAlchemy
+
+load_dotenv()
+fr_lil1 = vyos_api("https://10.100.100.4/graphql", os.getenv("apikey"))
 
 usmanerx = net_automation.EdgeOS(
     device_type = "ubiquiti_edgerouter",
@@ -20,12 +26,12 @@ usmanerx = net_automation.EdgeOS(
     key_file = r"C:\Users\Usman\.ssh\id_rsa",)
 
 
-fr_lil1 = net_automation.Vyos(
-    device_type = "vyos",
-    host = "10.100.100.4",
-    username = "test", 
-    password = "test", 
-    use_keys = False)
+# fr_lil1 = net_automation.Vyos(
+#     device_type = "vyos",
+#     host = "10.100.100.4",
+#     username = "test", 
+#     password = "test", 
+#     use_keys = False)
 
 class LookingGlassForm(FlaskForm):
 
@@ -95,39 +101,29 @@ def whois(router, query):
 
     return render_template("whois.html", result=result)
 
-@app.route("/looking_glass/<router>/routes/", methods=["GET", "POST"])
-def routes(router):
-    target = (request.args.get("target"))
-
-    rtrname = eval(router) # gets object name, instead of string
+@app.route("/looking_glass/<router>/routesv4/", methods=["GET", "POST"])
+def get_routes_v4(router):
+    result = fr_lil1.get_all_routes("inet")
     
-    if not hasattr(rtrname, "SSHConnection"):  # if object doesn't 
-                                               # have SSHConnection attribute (not connected via SSH)
-        rtrname.init_ssh()                     # initialize SSHConnection     (establish tunnel)
+    return render_template("get_routes.html", result=result, router=router)
 
-    if target == None:
-        result = rtrname.get_route_table("")
-    else:
-        result = rtrname.get_route(target)
+@app.route("/looking_glass/<router>/route_summary/", methods=["GET", "POST"])
+def get_route_summary(router):
 
-    return render_template("routes.html", target=target, result=result, router=router, time=datetime.now())
+    family =  (request.args.get("family"))
+    if family == None:
+        family = "inet"
 
+    result = fr_lil1.get_route_summary(family)
+
+    return render_template("get_route_summary.html", result=result, family=family, router=router)
 
 @app.route("/looking_glass/<router>/bgp/", methods=["GET", "POST"])
-def bgp(router):
+def get_bgp_peers(router):
 
-    neighbor = (request.args.get("neighbor"))
+    result = fr_lil1.get_bgp_peers()
 
-    rtrname = eval(router) # gets object name, instead of string
-    
-    if not hasattr(rtrname, "SSHConnection"):  # if object doesn't 
-                                               # have SSHConnection attribute (not connected via SSH)
-        rtrname.init_ssh()                     # initialize SSHConnection     (establish tunnel)
-
-    if neighbor == None:
-        result = rtrname.get_bgp_summary()
-    
-    return render_template("bgp.html", result=result, router=router, time=datetime.now())
+    return render_template("get_bgp_peers.html", result=result, router=router, time=datetime.now())
 
 
 @app.route("/looking_glass/<router>/get_bgp_peer_routes/", methods=["GET", "POST"])
@@ -167,13 +163,7 @@ def get_bgp_peer(router, peer):
 
     desc = (request.args.get("desc"))
 
-    rtrname = eval(router) # gets object name, instead of string
-    
-    if not hasattr(rtrname, "SSHConnection"):  # if object doesn't 
-                                               # have SSHConnection attribute (not connected via SSH)
-        rtrname.init_ssh()                     # initialize SSHConnection     (establish tunnel)
-
-    result = rtrname.get_bgp_peer(peer)
+    result = fr_lil1.get_bgp_peer(peer)
 
     return render_template("get_bgp_peer.html", router=router, result=result, peer=peer, desc=desc)
 
