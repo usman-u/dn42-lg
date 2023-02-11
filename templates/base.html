@@ -2,6 +2,9 @@
 <html lang="en">
 
 <head>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='android-chrome-512x512.png') }}">
+
+
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,9 +15,17 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap5.css">
 
 
-    <title>(Net Aut){% block title %}{% endblock %}</title>
+    <title>{% block title %}{% endblock %} - Usman.dn42</title>
 
     <style>
+        a:link { text-decoration: none; }
+
+        a:visited { text-decoration: none; }
+
+        a:hover { text-decoration: underline; }
+
+        a:active { text-decoration: underline; }
+
         .footer {
             background-color: #eee;
             border-top: dotted 1px #999;
@@ -58,7 +69,7 @@
 </body>
 
 <div class="footer fixed-bottom">
-    UsmanNet DN42 Looking Glass by <a href="https://blog.usman.network">blog.usman.network</a>. Contact: <a href="mailto:usman@usman.network">usman@usman.network</a> or <a href="https://discord.com/users/371617715443466253">Usman#5151 on Discord</a>.
+    usman.dn42 Looking Glass by <a href="https://blog.usman.network">blog.usman.network</a>. Contact: <a href="mailto:usman@usman.network">usman@usman.network</a> or <a href="https://discord.com/users/371617715443466253">Usman#5151 on Discord</a>.
 </div>
 
 </html>
