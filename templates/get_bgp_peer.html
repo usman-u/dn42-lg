@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %} {{ peer }} {%endblock%}
+{% block title %} {{ desc }} - {{ peer }} {%endblock%}
 
 {% block content %}
 
@@ -7,7 +7,173 @@
 <h2>{{ router }}: show ip bgp {{ peer }} ({{ desc }})</h2>
 <br>
 {% endif %}
+
 <pre>
-{{ result }}
+BGP neighbor is: <b>{{ peer }}</b>. {% if result['nbr_desc'] is defined-%} Description: <b>{{ result['nbr_desc'] }}</b> {% endif %}
+    BGP State: <b>{{ result["bgp_state"] }}</b> {% if result['bgp_state'] == 'Established' -%} Uptime: {{ result['bgp_timer_up_string'] }}. Since {{ result['bgp_timer_up_established_epoch']}} {% endif -%}
+    Local role: {{ result["local_role"] }}, Remote role: {{ result["remote_role"] }}
+    Local AS: <a href="https://explorer.burble.com/#/aut-num/AS{{result['local_as']}}">{{ result["local_as"] }}</a>
+    Local router ID: <a href="https://explorer.burble.com/#/">{{ result["local_router_id"] }}</a>
+    Remote AS: <a href="https://explorer.burble.com/#/aut-num/AS{{result['remote_as']}}">{{ result["remote_as"] }}</a>
+    Remote router ID: <a href="https://explorer.burble.com/#/">{{ result["remote_router_id"] }}</a>
+
+    {% if result['neighbor_capabilities'] is defined -%}
+    Neighbour capabilities: 
+
+        {%- if result['neighbor_capabilities']['4byte_as'] is defined %}
+        4 Byte AS: {{ result['neighbor_capabilities']['4byte_as']}}
+        {% endif -%}
+
+        {%- if result['neighbor_capabilities']['add_path'] is defined -%}
+        Add path:
+            {%- if result['neighbor_capabilities']['add_path']['ipv4_unicast'] is defined -%}
+                {%- for path in result['neighbor_capabilities']['add_path'] %}
+            {{ path }}: {{ result['neighbor_capabilities']['add_path'][path]['rx_advertised'] }}
+                {%- endfor -%}
+
+
+            {%- endif -%}
+        {% endif -%}
+
+        {%- if result['neighbor_capabilities']['extended_nexthop'] is defined %}
+        extended_nexthop: {{ result['neighbor_capabilities']['extended_nexthop']}}
+        {% endif -%}
+
+        {%- if result['neighbor_capabilities']['extended_nexthop_famililes_by_peer'] is defined -%}
+        extended_nexthop_famililes_by_peer:
+            {%- for family in result['neighbor_capabilities']['extended_nexthop_famililes_by_peer'] %}
+            {{ family }}: {{ result['neighbor_capabilities']['extended_nexthop_famililes_by_peer'][family] }}
+            {%- endfor -%}
+        {% endif -%}
+
+        {%- if result['neighbor_capabilities']['long_lived_graceful_restart'] is defined %}
+        long_lived_graceful_restart: {{ result['neighbor_capabilities']['long_lived_graceful_restart']}}
+        {% endif -%}
+
+        {%- if result['neighbor_capabilities']['long_lived_graceful_restart'] is defined -%}
+        extended_nexthop_famililes_by_peer:
+            {%- for family in result['neighbor_capabilities']['long_lived_graceful_restart_by_peer'] %}
+            {{ family }}: {{ result['neighbor_capabilities']['long_lived_graceful_restart_by_peer'][family] }}
+            {%- endfor -%}
+        {% endif -%}
+
+        {%- if result['neighbor_capabilities']['route_refresh'] is defined %}
+        route_refresh: {{ result['neighbor_capabilities']['route_refresh']}}
+        {% endif -%}
+
+        {%- if result['neighbor_capabilities']['enhanced_route_refresh'] is defined -%}
+        enhanced_route_refresh: {{ result['neighbor_capabilities']['enhanced_route_refresh']}}
+        {% endif -%}
+
+        {%- if result['neighbor_capabilities']['host_name'] is defined -%}
+        Host_name:
+            {%- for name in result['neighbor_capabilities']['host_name'] %}
+            {{ name }}: {{ result['neighbor_capabilities']['host_name'][name] }}
+            {%- endfor -%}
+        {% endif -%}
+
+        {%- if result['neighbor_capabilities']['multiprotocol_extensions'] is defined %}
+        multiprotocol_extensions:
+            {%- for family in result['neighbor_capabilities']['multiprotocol_extensions'] %}
+             advertised_and_received ({{ family }}): {{ result['neighbor_capabilities']['multiprotocol_extensions'][family]['advertised_and_received'] }}
+            {%- endfor -%}
+        {% endif -%}
+
+        {%- if result['neighbor_capabilities']['graceful_restart'] is defined %}
+        graceful_restart: {{ result['neighbor_capabilities']['graceful_restart']}}
+        graceful_restart_timer(msecs): {{ result["neighbor_capabilities"]["graceful_restart_remote_timer_msecs"] }}
+        {% endif -%}
+
+        {%- if result['neighbor_capabilities']['address_families_by_peer'] is defined -%}
+        address_families_by_peer: {{ result['neighbor_capabilities']['address_families_by_peer']}}
+        {% endif -%}
+
+    {% endif %}
+
+    Connections established: {{ result["connections_established"] }}
+    Connections dropped: {{ result["connections_dropped"] }}
+    Last reset (msecs): {{ result["last_reset_timer_msecs"] }}
+    Last reset reason: {{ result["last_reset_due_to"] }}
+    Last reset code: {{ result["last_reset_code"] }}
+    External neighbor max hops: {{ result["external_bgp_nbr_max_hops_away"] }}
+    Host Local: <a href="{{ result['host_local'] }}">{{ result["host_local"] }}</a> Port Local: {{ result["port_local"] }}
+    Host Foreign: <a href="{{ result['host_foreign'] }}">{{ result["host_foreign"] }}</a> Port Foreign: {{ result["port_foreign"] }}
+    Nexthop: <a href="" >{{ result["nexthop"] }}</a>
+    Nexthop global: {{ result["nexthop_global"] }}
+    Nexthop local: {{ result["nexthop_local"] }}
 </pre>
+<div class="p-3 mb-5 bg-body rounded ">
+    <table  class="bgp table table-hover table-sm" style="width:70%">
+        <thead class="thead-dark">
+            <tr>
+                <th scope="col">Type</th>
+                <th scope="col">Sent</th>
+                <th scope="col">Rcvd</th>
+            </tr>
+        </thead>
+        <tbody>
+            <div id="results">
+                <tr>
+                    <td> <b>Opens</b> </td>
+                    <td> {{ result["message_stats"]["opens_sent"]}} </td>
+                    <td> {{ result["message_stats"]["opens_recv"]}} </td>
+                </tr>
+
+                <tr>
+                    <td> <b>Notifications</b> </td>
+                    <td> {{ result["message_stats"]["notifications_sent"]}} </td>
+                    <td> {{ result["message_stats"]["notifications_recv"]}} </td>
+                </tr>
+
+                <tr>
+                    <td> <b>Updates</b> </td>
+                    <td> {{ result["message_stats"]["updates_sent"]}} </td>
+                    <td> {{ result["message_stats"]["updates_recv"]}} </td>
+                </tr>
+
+                <tr>
+                    <td> <b>Keepalives</b> </td>
+                    <td> {{ result["message_stats"]["keepalives_sent"]}} </td>
+                    <td> {{ result["message_stats"]["keepalives_recv"]}} </td>
+                </tr>
+
+                <tr>
+                    <td><b>Route refreshes</b> </td>
+                    <td> {{ result["message_stats"]["route_refresh_sent"]}} </td>
+                    <td> {{ result["message_stats"]["route_refresh_recv"]}} </td>
+                </tr>
+
+                <tr>
+                    <td> <b>Capability</b> </td>
+                    <td> {{ result["message_stats"]["capability_sent"]}} </td>
+                    <td> {{ result["message_stats"]["capability_recv"]}} </td>
+                </tr>
+
+                <tr>
+                    <td> <b>Total</b> </td>
+                    <td> {{ result["message_stats"]["total_sent"]}} </td>
+                    <td> {{ result["message_stats"]["total_recv"]}} </td>
+                </tr>
+            </div>
+        </tbody>
+    </table>
+</div>
+
+<br>
+<br>
+<br>
+<br>
+
+{{ result }}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function epochToDate(epoch) {
+        var d = new Date(0); // The 0 there is the key, which sets the date to the epoch
+        d.setUTCSeconds(epoch);
+        return d;
+    }
+</script>
 {% endblock %}
