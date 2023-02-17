@@ -1,37 +1,26 @@
 from flask import Flask, redirect, url_for, render_template, flash, request
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, BooleanField, SelectField
-from wtforms_sqlalchemy.fields import QuerySelectField
 from wtforms.validators import DataRequired, Email, InputRequired
 from flask_sqlalchemy import SQLAlchemy
+from flask_bootstrap import Bootstrap
 from datetime import datetime
 from net_automation import net_automation
 from vyos_api import vyos_api
 from dotenv import load_dotenv
 import os
+import sys
+import concurrent.futures
+import dn42_whois
 
 app = Flask(__name__)                                         # create an instance of the Flask class
 app.config["SECRET_KEY"] = "fhdujghrfdjkhgdfjk"               # secret key
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sql"    # location of DB
-db = SQLAlchemy(app)                                          # inits the db, instance of SQLAlchemy
+Bootstrap(app)
+
 
 load_dotenv()
-fr_lil1 = vyos_api("https://10.100.100.4/graphql", os.getenv("apikey"))
-
-usmanerx = net_automation.EdgeOS(
-    device_type = "ubiquiti_edgerouter",
-    host = "erx.usman.lan",
-    username = "usman", 
-    use_keys = True, 
-    key_file = r"C:\Users\Usman\.ssh\id_rsa",)
-
-
-# fr_lil1 = net_automation.Vyos(
-#     device_type = "vyos",
-#     host = "10.100.100.4",
-#     username = "test", 
-#     password = "test", 
-#     use_keys = False)
+fr_lil1 = vyos_api("https://172.22.132.167/graphql", os.getenv("apikey"))
+us_ca1 = vyos_api("https://172.22.132.164/graphql", os.getenv("apikey"))
 
 class LookingGlassForm(FlaskForm):
 
@@ -40,9 +29,9 @@ class LookingGlassForm(FlaskForm):
     # device = SelectField(u"Device Name", choices=[all_devices, "test", "test2"])
     # print (all_devices)
 
-    device = SelectField(u"Device Name", choices=["usmanerx"])
+    device = SelectField(u"Device Name", choices=["fr-lil1.usman.dn42", "uk-lon3.usman.dn42"])
 
-    operation = SelectField(u"Operation", choices=["Show IP Route", "Show IP Route to"])
+    operation = SelectField(u"Operation", choices=["BGP Peer Summary"])
     target = StringField("Target", render_kw={"placeholder": "1.1.1.1"})
     submit = SubmitField("Submit")
 
@@ -75,7 +64,7 @@ def looking_glass():
         print (form.operation.data)
         # if form.operation.data == "Show IP Route To":
         
-        return redirect(url_for("routes", router=form.device.data, target=form.target.data))
+        return redirect(url_for("", router=form.device.data, target=form.target.data))
         
     
     return render_template("looking_glass.html",
@@ -85,43 +74,50 @@ def looking_glass():
                                  target=target)
 
 
-@app.route("/looking_glass/<router>/whois/<query>", methods=["GET", "POST"])
-def whois(router, query):
-
-
-    target = (request.args.get("target"))
-
-    rtrname = eval(router) # gets object name, instead of string
-    
-    if not hasattr(rtrname, "SSHConnection"):  # if object doesn't 
-                                               # have SSHConnection attribute (not connected via SSH)
-        rtrname.init_ssh()                     # initialize SSHConnection     (establish tunnel)
-
-    result = fr_lil1.whois_dn42(query)
-
-    return render_template("whois.html", result=result)
-
 @app.route("/looking_glass/<router>/routesv4/", methods=["GET", "POST"])
 def get_routes_v4(router):
-    result = fr_lil1.get_all_routes("inet")
+    rtr_instance = getattr(sys.modules[__name__], router)
+    result = rtr_instance.get_all_routes("inet")
     
     return render_template("get_routes.html", result=result, router=router)
 
 @app.route("/looking_glass/<router>/route_summary/", methods=["GET", "POST"])
 def get_route_summary(router):
 
-    family =  (request.args.get("family"))
-    if family == None:
-        family = "inet"
+    rtr_instance = getattr(sys.modules[__name__], router)
 
-    result = fr_lil1.get_route_summary(family)
+    inet = rtr_instance.get_route_summary("inet")
+    inet6 = rtr_instance.get_route_summary("inet6")
 
-    return render_template("get_route_summary.html", result=result, family=family, router=router)
+    return render_template("get_route_summary.html", inet=inet, inet6=inet6, router=router)
 
-@app.route("/looking_glass/<router>/bgp/", methods=["GET", "POST"])
-def get_bgp_peers(router):
 
-    result = fr_lil1.get_bgp_peers()
+@app.route("/looking_glass/summary/bgp/", methods=["GET", "POST"])
+def get_summary_bgp():
+
+    routers = request.args.getlist("routers")
+
+    results = []
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_router = {executor.submit(getattr(sys.modules[__name__], router).get_bgp_peers): router for router in routers}
+        for future in concurrent.futures.as_completed(future_to_router):
+            router = future_to_router[future]
+            try:
+                result = future.result()
+                results.append(result)
+            except Exception as exc:
+                print(f"{router} generated an exception: {exc}")
+
+    return render_template("summary_bgp.html", results=results, routers=routers)
+
+
+@app.route("/looking_glass/bgp_peers/", methods=["GET", "POST"])
+def get_bgp_peers():
+    router = (request.args.get("router"))
+
+    rtrname = getattr(sys.modules[__name__], router)
+    result = rtrname.get_bgp_peers()
 
     return render_template("get_bgp_peers.html", result=result, router=router, time=datetime.now())
 
@@ -158,56 +154,27 @@ def get_bgp_peer_advertised_routes(router):
     return render_template("get_bgp_peer_advertised_routes.html", router=router, result=result, peer=peer)
 
 
-@app.route("/looking_glass/<router>/get_bgp_peer/<peer>/", methods=["GET", "POST"])
-def get_bgp_peer(router, peer):
-
+@app.route("/looking_glass/get_bgp_peer/", methods=["GET", "POST"])
+def get_bgp_peer():
+    
+    router = (request.args.get("router"))
+    peer = (request.args.get("peer"))
     desc = (request.args.get("desc"))
 
-    result = fr_lil1.get_bgp_peer(peer)
+    rtr_instance = getattr(sys.modules[__name__], router)
+
+    result = rtr_instance.get_bgp_peer(peer)
 
     return render_template("get_bgp_peer.html", router=router, result=result, peer=peer, desc=desc)
 
-@app.route("/looking_glass/<router>/peerbgproutes/<peer>", methods=["GET", "POST"])
-def peer_bgp_routes(router, peer):
 
-    rtrname = eval(router) # gets object name, instead of string
-    
-    if not hasattr(rtrname, "SSHConnection"):  # if object doesn't 
-                                               # have SSHConnection attribute (not connected via SSH)
-        rtrname.init_ssh()                     # initialize SSHConnection     (establish tunnel)
+@app.route("/looking_glass/whois/", methods=["GET", "POST"])
+def whois():
+    target = (request.args.get("target"))
 
-    result = rtrname.get_peer_bgp_routes(peer)
+    result = dn42_whois.dn42_whois(target)
 
-    return render_template("bgppeerroutes.html", router=router, result=result, peer=peer)
-
-@app.route("/looking_glass/<router>/bgp/<prefix>/", methods=["GET", "POST"])
-def bgp_route(router, prefix):
-
-    rtrname = eval(router) # gets object name, instead of string
-    
-    if not hasattr(rtrname, "SSHConnection"):  # if object doesn't 
-                                               # have SSHConnection attribute (not connected via SSH)
-        rtrname.init_ssh()                     # initialize SSHConnection     (establish tunnel)
-
-    result = rtrname.get_bgp_route(prefix)
-
-    return render_template("bgproute.html", result=result, router=router, prefix=prefix)
-
-@app.route("/looking_glass/<router>/ospf/", methods=["GET", "POST"])
-def ospf(router):
-
-    rtrname = eval(router) # gets object name, instead of string
-    
-    if not hasattr(rtrname, "SSHConnection"):  # if object doesn't 
-                                               # have SSHConnection attribute (not connected via SSH)
-        rtrname.init_ssh()                     # initialize SSHConnection     (establish tunnel)
-
-    # if neighbor == None:
-    #     result = rtrname.get_bgp_neighbors()
-    
-    result = rtrname.get_ospf_neighbors()
-    
-    return render_template("ospf.html", result=result, router=router)
+    return render_template("whois.html", target=target, result=result)
 
 @app.route("/looking_glass/<router>/interfaces/", methods=["GET", "POST"])
 def interfaces(router):
@@ -238,5 +205,3 @@ def page_not_found(error):
 
 if __name__ == "__main__":
     app.run(debug=True, threaded=True)
-    db.create_all()
-

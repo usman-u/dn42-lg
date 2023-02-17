@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %} Whois {%endblock%}
+{% block title %} {{ target }} - Whois {%endblock%}
 
 {% block content %}
+
+<h2> Whois: {{ target }} </h2>
 <pre>
 {{ result }}
 </pre>
+
 {% endblock %}
