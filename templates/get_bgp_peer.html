@@ -12,11 +12,10 @@
 BGP neighbor is: <b>{{ peer }}</b>. {% if result['nbr_desc'] is defined-%} Description: <b>{{ result['nbr_desc'] }}</b> {% endif %}
     BGP State: <b>{{ result["bgp_state"] }}</b> {% if result['bgp_state'] == 'Established' -%} Uptime: {{ result['bgp_timer_up_string'] }}. Since {{ result['bgp_timer_up_established_epoch']}} {% endif -%}
     Local role: {{ result["local_role"] }}, Remote role: {{ result["remote_role"] }}
-    Local AS: <a href="https://explorer.burble.com/#/aut-num/AS{{result['local_as']}}">{{ result["local_as"] }}</a>
-    Local router ID: <a href="https://explorer.burble.com/#/">{{ result["local_router_id"] }}</a>
-    Remote AS: <a href="https://explorer.burble.com/#/aut-num/AS{{result['remote_as']}}">{{ result["remote_as"] }}</a>
-    Remote router ID: <a href="https://explorer.burble.com/#/">{{ result["remote_router_id"] }}</a>
-
+    Local AS: <a  target=”_blank” rel="noopener" href="/looking_glass/whois/?target=as{{ result['local_as']}}">{{ result["local_as"] }}</a>
+    Local Router ID: <a target=”_blank” rel="noopener" href="{{ url_for('whois', target=result['local_router_id']) }}" >{{ result["local_router_id"] }}</a>
+    Remote AS: <a  target=”_blank” rel="noopener" href="/looking_glass/whois/?target=as{{ result['remote_as']}}">{{ result["remote_as"] }}</a>
+    Remote Router ID: <a target=”_blank” rel="noopener" href="{{ url_for('whois', target=result['remote_router_id']) }}" >{{ result["remote_router_id"] }}</a>
     {% if result['neighbor_capabilities'] is defined -%}
     Neighbour capabilities: 
 
@@ -87,23 +86,34 @@ BGP neighbor is: <b>{{ peer }}</b>. {% if result['nbr_desc'] is defined-%} Descr
         {%- if result['neighbor_capabilities']['address_families_by_peer'] is defined -%}
         address_families_by_peer: {{ result['neighbor_capabilities']['address_families_by_peer']}}
         {% endif -%}
-
     {% endif %}
-
     Connections established: {{ result["connections_established"] }}
     Connections dropped: {{ result["connections_dropped"] }}
     Last reset (msecs): {{ result["last_reset_timer_msecs"] }}
     Last reset reason: {{ result["last_reset_due_to"] }}
     Last reset code: {{ result["last_reset_code"] }}
     External neighbor max hops: {{ result["external_bgp_nbr_max_hops_away"] }}
-    Host Local: <a href="{{ result['host_local'] }}">{{ result["host_local"] }}</a> Port Local: {{ result["port_local"] }}
-    Host Foreign: <a href="{{ result['host_foreign'] }}">{{ result["host_foreign"] }}</a> Port Foreign: {{ result["port_foreign"] }}
-    Nexthop: <a href="" >{{ result["nexthop"] }}</a>
+    Host Local: <a target=”_blank” rel="noopener" href="{{ result['host_local'] }}">{{ result["host_local"] }}</a> Port Local: {{ result["port_local"] }}
+    Host Foreign: <a target=”_blank” rel="noopener" href="{{ result['host_foreign'] }}">{{ result["host_foreign"] }}</a> Port Foreign: {{ result["port_foreign"] }}
+    Nexthop: <a target=”_blank” rel="noopener" href="{{ url_for('whois', target=result['nexthop']) }}" >{{ result["nexthop"] }}</a>
     Nexthop global: {{ result["nexthop_global"] }}
     Nexthop local: {{ result["nexthop_local"] }}
+
+    {% if result["address_family_info"] is defined -%}
+        {% for family in result['address_family_info'] %}
+    For address family <b>{{ family }}:</b>
+            {% for data in result["address_family_info"][family] -%}
+        {{ data }}: {{ result["address_family_info"][family][data] }}
+            {% endfor -%}
+        {% endfor -%}
+    {% endif -%}
+</pre>
+<h5>Message Stats:</h5>
+<pre>
+depth_inq: {{ result["message_stats"]["depth_inq"] }} depth_outq: {{ result["message_stats"]["depth_outq"] }}
 </pre>
 <div class="p-3 mb-5 bg-body rounded ">
-    <table  class="bgp table table-hover table-sm" style="width:70%">
+    <table  class="bgp table table-hover table-sm" style="width:50%">
         <thead class="thead-dark">
             <tr>
                 <th scope="col">Type</th>
@@ -158,22 +168,4 @@ BGP neighbor is: <b>{{ peer }}</b>. {% if result['nbr_desc'] is defined-%} Descr
         </tbody>
     </table>
 </div>
-
-<br>
-<br>
-<br>
-<br>
-
-{{ result }}
-
-{% endblock %}
-
-{% block scripts %}
-<script>
-    function epochToDate(epoch) {
-        var d = new Date(0); // The 0 there is the key, which sets the date to the epoch
-        d.setUTCSeconds(epoch);
-        return d;
-    }
-</script>
 {% endblock %}
