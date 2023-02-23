@@ -6,40 +6,15 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
 from datetime import datetime
 from net_automation import net_automation
-from dotenv import load_dotenv
 import os
 import sys
 import concurrent.futures
 import dn42_whois
+from inventory import routers
 
 app = Flask(__name__)  # create an instance of the Flask class
 app.config["SECRET_KEY"] = os.getenv("flask_secret_key")  # secret key
 Bootstrap(app)
-
-
-load_dotenv()
-
-routers = {
-    # router name:    API/SSH  instance.
-    "fr_lil1": net_automation.Vyos(
-        device_type="vyos",
-        host="172.22.132.167",
-        username="test",
-        password=os.getenv("fr_lil1_password"),
-        use_keys=False,
-        url="https://172.22.132.167/graphql",
-        key=os.getenv("apikey"),
-    ),
-    "us_ca1": net_automation.Vyos(
-        device_type="vyos",
-        host="172.22.132.164",
-        username="test",
-        password=os.getenv("us_ca1_password"),
-        use_keys=False,
-        url="https://172.22.132.167/graphql",
-        key=os.getenv("apikey"),
-    ),
-}
 
 
 class LookingGlassForm(FlaskForm):
