@@ -183,26 +183,18 @@ def whois():
     return render_template("whois.html", target=target, result=result)
 
 
-@app.route("/looking_glass/<router>/interfaces/", methods=["GET", "POST"])
-def interfaces(router):
-    rtrname = eval(router)  # gets object name, instead of string
+@app.route("/looking_glass/get_interfaces/", methods=["GET", "POST"])
+def get_interfaces():
+    router = request.args.get("router")
+    
+    rtr_instance = routers[router]
 
-    if not hasattr(rtrname, "SSHConnection"):  # if object doesn't
-        # have SSHConnection attribute (not connected via SSH)
-        rtrname.init_ssh()  # initialize SSHConnection     (establish tunnel)
+    if not rtr_instance.check_ssh():
+        rtr_instance.init_ssh()
 
-    result = rtrname.get_interfaces()
+    result = rtr_instance.get_interfaces()
 
-    return render_template("interfaces.html", result=result, router=router)
-
-
-@app.route("/looking_glass/<router>/summary/", methods=["GET", "POST"])
-def summary(router):
-    rtrname = eval(router)  # gets object name, instead of string
-
-    if not hasattr(rtrname, "SSHConnection"):  # if object doesn't
-        # have SSHConnection attribute (not connected via SSH)
-        rtrname.init_ssh()  # initialize SSHConnection     (establish tunnel)
+    return render_template("get_interfaces.html", result=result, router=router)
 
 
 @app.errorhandler(404)
@@ -211,4 +203,4 @@ def page_not_found(error):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, threaded=True)
+    app.run(debug=True, threaded=False)
