@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}
+Table
+{% endblock %}
+
+{% block content %}
+
+    <h2>
+        {{ router }}: show ip route <code> IPv4 </code>
+    </h2>
+
+{{ result }}
+
+<div class="p-3 mb-5 bg-body rounded">
+
+    <table id="bgp" class="table table-hover">
+
+        <thead class="thead-dark">
+            <tr>
+                <th scope="col">Prefix</th>
+                <th scope="col">Nexthop</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            <div id="results">
+                {% for route in result %}
+                <tr>
+                    <td> {{route["prefix"]}} </td>
+                </tr>
+                {% endfor %}
+            </div>
+
+
+        </tbody>
+    </table>
+
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $('#bgp').DataTable({
+        });
+    })
+</script>
+{% endblock %}

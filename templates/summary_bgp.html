@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %} BGP Summary {% endblock %}
+
+{% block content %}
+
+{% for result in range(results|length) -%}
+    <div class="p-3 mb-5 bg-body rounded">
+        <table class = "bgp table table-hover">
+            <h3>
+                {{ routers[result] }}: show ip bgp summary
+            </h3>
+            <br>
+            <thead class="thead-dark">
+                <tr>
+                    <th scope="col">Peer Name</th>
+                    <th scope="col">Peer ASN</th>
+                    <th scope="col">Peer IP</th>
+                    <th scope="col">State</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Up/Down</th>
+                    <th scope="col">State/PfxRcd</th>
+                    <th scope="col">PfxSnt</th>
+                </tr>
+            </thead>
+            <tbody>
+                <div id="results">
+                    {% for peer in results[result] %}
+                    <tr>
+                        <td> <a href="{{ url_for ('get_bgp_peer', router=router, peer=peer['neighbor'], desc=peer['desc'])  }}"  > {{peer["desc"]}} </td>
+                        <td> {{peer["remote_as"]}} </td>
+                        <td> {{peer["neighbor"]}} </td>
+                        <td> {{peer["state"]}} </td>
+                        <td> {{peer["id_type"]}} </td>
+                        <td> {{peer["peer_uptime"]}}</td>
+                        <td> <a href="{{ url_for ('get_bgp_peer_routes', router=router, peer=peer['neigbor']) }}" >  {{peer["pfx_rcd"]}}  </a></td>
+                        <td> {{peer['pfx_snt']}} </td>
+                    </tr>
+                    {% endfor %}
+                </div>
+            </tbody>
+        </table>
+    </div>
+{% endfor %}
+{% endblock%} 
+
+{% block scripts %}
+<script>
+        $(document).ready(function() {
+            $(".bgp").DataTable({
+                responsive: true,
+                paging: false, searching: false,
+                
+                "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+
+                    console.log("nr", nRow)
+                    console.log(aData)
+
+                    const colour = aData[3] != "Established" ? '#f5c6cb' : '#c3e6cb';
+
+                    $(nRow).css('background-color', colour)
+
+
+                }
+            });
+        })
+</script>
+{% endblock %}

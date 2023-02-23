@@ -1,9 +1,0 @@
-{% extends "base.html" %} {% block title %} {% if target and target|length %} Route To {{ target }} {% else %} Full Route Table {% endif %} {% endblock %} {% block content %} {% if target and target|length %}
-<h1>Route To {{ target }} | from {{ router }}</h1>
-{% else %}
-<h1>Full Route Table</h1>
-{% endif %}
-
-<pre>
-    {{ result }}
-</pre> {% endblock %}

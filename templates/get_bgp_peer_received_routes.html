@@ -1,7 +1,7 @@
 {% extends "base.html" %} {% block title %} BGP Route {%endblock%} {% block content %} {% if router and router|length %}
-<h1>
-    {{ router }}: show route for {{ prefix }}
-</h1>
+<h2>
+    {{ router }}: BGP routes received from <code> {{ peer }} </code>
+</h2>
 <br> {% endif %}
 <pre>
 {{ result }}

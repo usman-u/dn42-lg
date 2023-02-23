@@ -1,0 +1,72 @@
+{% extends "base.html" %} {% block title %} Route Summary {%endblock%} {% block content %} 
+
+<h2>
+    {{ router }}:  route summary <code> inet (ipv4) </code>
+</h2>
+
+<div class="p-3 mb-5 bg-body rounded">
+    <table id="bgp" class="table table-hover">
+
+        <thead class="thead-dark">
+            <tr>
+                <th scope="col">Type</th>
+                <th scope="col">RIB</th>
+                <th scope="col">FIB</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            <div id="results">
+                {% for route in inet["routes"] %}
+                    <tr>
+                        <td> {{ route["type"]}} </td>
+                        <td> {{ route["rib"]}} </td>
+                        <td> {{ route["fib"]}} </td>
+                    </tr>
+                {% endfor %}
+
+            </div>
+
+
+        </tbody>
+    </table>
+
+
+</div>
+
+<h2>
+    {{ router }}:  route summary <code> inet6 (ipv6) </code>
+</h2>
+
+<div class="p-3 mb-5 bg-body rounded">
+    <table id="bgp" class="table table-hover">
+
+        <thead class="thead-dark">
+            <tr>
+                <th scope="col">Type</th>
+                <th scope="col">RIB</th>
+                <th scope="col">FIB</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            <div id="results">
+                {% for route in inet6["routes"] %}
+                    <tr>
+                        <td> {{ route["type"]}} </td>
+                        <td> {{ route["rib"]}} </td>
+                        <td> {{ route["fib"]}} </td>
+                    </tr>
+                {% endfor %}
+
+            </div>
+
+
+        </tbody>
+    </table>
+
+
+</div>
+
+{{ result }}
+{% endblock %}

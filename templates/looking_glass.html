@@ -1,22 +1,26 @@
 {% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %} Looking Glass {%endblock%}
 
 {% block content %}
-<h1>Looking Glass</h1>
 
-<form method =  "POST">
+<h2> usman.dn42 - Looking Glass</h2>
+
+<form method="POST">
     {{ form.hidden_tag() }}
-    <br>
-    {{ form.device.label}}
-    {{ form.device}}
-    <br>
-    {{ form.operation.label}}
-    {{ form.operation}}
-    {{ form.target.label}}
-    {{ form.target}}
+    
+    {{ wtf.quick_form(form)}}
+
+    <br> {{ form.device.label}} {{ form.device}}
+    <br> {{ form.operation.label}} {{ form.operation}} {{ form.target.label}} {{ form.target}}
 
     <br>
-    <br>
-    {{ form.submit(class="btn btn-secondary") }}
+    <br> {{ form.submit(class="btn btn-secondary") }}
 </form>
+
+
+
+
 
 {% endblock %}
