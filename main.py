@@ -27,8 +27,8 @@ routers = {
         username="test",
         password=os.getenv("fr_lil1_password"),
         use_keys=False,
-        url = "https://172.22.132.167/graphql",
-        key = os.getenv("apikey"),
+        url="https://172.22.132.167/graphql",
+        key=os.getenv("apikey"),
     ),
     "us_ca1": net_automation.Vyos(
         device_type="vyos",
@@ -36,10 +36,11 @@ routers = {
         username="test",
         password=os.getenv("us_ca1_password"),
         use_keys=False,
-        url = "https://172.22.132.167/graphql",
-        key = os.getenv("apikey"),
+        url="https://172.22.132.167/graphql",
+        key=os.getenv("apikey"),
     ),
 }
+
 
 class LookingGlassForm(FlaskForm):
     # device = QuerySelectField(query_factory=Devices.query.all())
@@ -127,9 +128,7 @@ def get_summary_bgp():
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_router = {
-            executor.submit(
-                routers[router].get_bgp_peers()
-            ): router
+            executor.submit(routers[router].get_bgp_peers()): router
             for router in routers
         }
         for future in concurrent.futures.as_completed(future_to_router):
@@ -142,6 +141,7 @@ def get_summary_bgp():
 
     return render_template("summary_bgp.html", results=results, routers=routers)
 
+
 @app.route("/looking_glass/get_bgp_peer/", methods=["GET", "POST"])
 def get_bgp_peer():
     router = request.args.get("router")
@@ -153,6 +153,7 @@ def get_bgp_peer():
     return render_template(
         "get_bgp_peer.html", router=router, result=result, peer=peer, desc=desc
     )
+
 
 @app.route("/looking_glass/bgp_peers/", methods=["GET", "POST"])
 def get_bgp_peers():
@@ -172,7 +173,7 @@ def get_bgp_peer_received_routes():
     rtr_instance = routers[router]
 
     if not rtr_instance.check_ssh():  # check if SSH session is active
-        rtr_instance.init_ssh()       # if not, create a new SSH session
+        rtr_instance.init_ssh()  # if not, create a new SSH session
 
     result = rtr_instance.get_bgp_peer_received_routes(peer)
 
@@ -196,7 +197,6 @@ def get_bgp_peer_advertised_routes(router):
     return render_template(
         "get_bgp_peer_advertised_routes.html", router=router, result=result, peer=peer
     )
-
 
 
 @app.route("/looking_glass/whois/", methods=["GET", "POST"])
