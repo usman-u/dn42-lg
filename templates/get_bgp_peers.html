@@ -35,7 +35,7 @@
                     <td> {{peer["id_type"]}} </td>
                     <td> {{peer["peer_uptime"]}}</td>
                     <td> <a href="{{ url_for ('get_bgp_peer_received_routes', router=router, peer=peer['neighbor']) }}" >  {{peer["pfx_rcd"]}}  </a></td>
-                    <td> {{peer['pfx_snt']}} </td>
+                    <td> <a href="{{ url_for ('get_bgp_peer_advertised_routes', router=router, peer=peer['neighbor']) }}" >  {{peer["pfx_snt"]}}  </a></td>
                 </tr>
                 {% endfor %}
             </div>
