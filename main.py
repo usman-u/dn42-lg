@@ -158,7 +158,7 @@ def get_bgp_peer_received_routes():
 
 
 @app.route("/looking_glass/get_bgp_peer_advertised_routes/", methods=["GET", "POST"])
-def get_bgp_peer_advertised_routes(router):
+def get_bgp_peer_advertised_routes():
     router = request.args.getlist("router")
     peer = request.args.get("peer")
 
@@ -203,4 +203,4 @@ def page_not_found(error):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, threaded=False)
+    app.run(debug=True, threaded=False, host="0.0.0.0")
