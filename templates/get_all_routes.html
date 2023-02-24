@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}
+Table
+{% endblock %}
+
+{% block content %}
+
+<h2>
+{{ router }}: show ip route <code> IPv4 </code>
+</h2>
+
+<div class="p-3 mb-5 bg-body rounded">
+
+    <table class="table table-hover">
+
+        <thead class="thead-dark">
+            <tr>
+                <th scope="col">Protocol</th>
+                <th scope="col">Selected</th>
+                <th scope="col">FIB</th>
+                <th scope="col">Prefix</th>
+                <th scope="col">Nexthop IP</th>
+                <th scope="col">Nexthop Interface</th>
+                <th scope="col">Nexthop Active</th>
+                <th scope="col">Distance</th>
+                <th scope="col">Weight</th>
+                <th scope="col">Uptime</th>
+                <th scope="col">VRF Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            <div id="results">
+                {% for route in inet %}
+                <tr>
+                    <td> {{route["protocol"]}} </td>
+                    <td> 
+                        {% if route["selected"] %}
+                        >
+                        {% endif -%}
+                    </td>
+
+                    <td>
+                    {% for nexthop in route['nexthops']%}
+                        {% if route["selected"] %}
+                        *
+                        {% endif -%}
+                    {% endfor -%}
+                    </td>
+
+                    <td> {{route["prefix"]}} </td>
+
+                    <td>
+                    {% for nexthop in route['nexthops']%}
+                    {{ nexthop["ip"] }}
+                    {% endfor -%}
+                    </td>
+
+                    <td>
+                    {% for nexthop in route['nexthops']%}
+                    {{ nexthop["interface_name"] }}
+                    {% endfor -%}
+                    </td>
+
+                    <td>
+                    {% for nexthop in route['nexthops']%}
+                    {{ nexthop["active"] }}
+                    {% endfor -%}
+                    </td>
+
+                    <td> {{route["distance"]}} </td>
+
+                    <td>
+                    {% for nexthop in route['nexthops']%}
+                    {{ nexthop["weight"] }}
+                    {% endfor -%}
+                    </td>
+
+
+                    <td>{{ route ["uptime"] }}</td>
+                    <td>{{ route ["vrf_name"] }}</td>
+
+                </tr>
+                {% endfor %}
+            </div>
+
+
+        </tbody>
+    </table>
+</div>
+
+
+<h2>
+{{ router }}: show ipv6 route <code> IPv6 </code>
+</h2>
+
+<div class="p-3 mb-5 bg-body rounded">
+
+    <table class="table table-hover">
+
+        <thead class="thead-dark">
+            <tr>
+                <th scope="col">Protocol</th>
+                <th scope="col">Selected</th>
+                <th scope="col">FIB</th>
+                <th scope="col">Prefix</th>
+                <th scope="col">Nexthop IP</th>
+                <th scope="col">Nexthop Interface</th>
+                <th scope="col">Nexthop Active</th>
+                <th scope="col">Distance</th>
+                <th scope="col">Weight</th>
+                <th scope="col">Uptime</th>
+                <th scope="col">VRF Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            <div id="results">
+                {% for route in inet6 %}
+                <tr>
+                    <td> {{route["protocol"]}} </td>
+                    <td> 
+                        {% if route["selected"] %}
+                        >
+                        {% endif -%}
+                    </td>
+
+                    <td>
+                    {% for nexthop in route['nexthops']%}
+                        {% if route["selected"] %}
+                        *
+                        {% endif -%}
+                    {% endfor -%}
+                    </td>
+
+                    <td> {{route["prefix"]}} </td>
+
+                    <td>
+                    {% for nexthop in route['nexthops']%}
+                    {{ nexthop["ip"] }}
+                    {% endfor -%}
+                    </td>
+
+                    <td>
+                    {% for nexthop in route['nexthops']%}
+                    {{ nexthop["interface_name"] }}
+                    {% endfor -%}
+                    </td>
+
+                    <td>
+                    {% for nexthop in route['nexthops']%}
+                    {{ nexthop["active"] }}
+                    {% endfor -%}
+                    </td>
+
+                    <td> {{route["distance"]}} </td>
+
+                    <td>
+                    {% for nexthop in route['nexthops']%}
+                    {{ nexthop["weight"] }}
+                    {% endfor -%}
+                    </td>
+
+
+                    <td>{{ route ["uptime"] }}</td>
+                    <td>{{ route ["vrf_name"] }}</td>
+
+                </tr>
+                {% endfor %}
+            </div>
+
+
+        </tbody>
+    </table>
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $('.table').DataTable({
+        });
+    })
+</script>
+{% endblock %}

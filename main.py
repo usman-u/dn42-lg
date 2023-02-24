@@ -70,15 +70,15 @@ def looking_glass():
     )
 
 
-@app.route("/looking_glass/routesv4/", methods=["GET", "POST"])
-def get_routes_v4():
-    router = request.args.getlist("router")
-    router += "_api"
+@app.route("/looking_glass/get_all_routes/", methods=["GET", "POST"])
+def get_routes():
+    router = request.args.get("router")
 
-    rtr_instance = getattr(sys.modules[__name__], router)
-    result = rtr_instance.get_all_routes("inet")
+    rtr_instance = routers[router]
+    inet = rtr_instance.get_all_routes("inet")
+    inet6 = rtr_instance.get_all_routes("inet6")
 
-    return render_template("get_routes.html", result=result, router=router)
+    return render_template("get_all_routes.html", inet=inet, inet6=inet6, router=router)
 
 
 @app.route("/looking_glass/route_summary/", methods=["GET", "POST"])
