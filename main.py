@@ -149,7 +149,7 @@ def get_bgp_peer_received_routes():
 
     # injection attack check
     if not is_valid_address(peer):
-        return render_template("error.html", input=peer ,error="Invalid IP address. Please try again. If you're trying to inject something, please stop.")
+        return render_template("error.html", input=peer ,error="Invalid Peer IP address. Please try again. If you're trying to inject something, please stop.")
 
     rtr_instance = routers[router]
 
@@ -168,6 +168,10 @@ def get_bgp_peer_advertised_routes():
     router = request.args.get("router")
     peer = request.args.get("peer")
     desc = request.args.get("desc")
+
+    # injection attack check
+    if not is_valid_address(peer):
+        return render_template("error.html", input=peer ,error="Invalid Peer IP address. Please try again. If you're trying to inject something, please stop.")
 
     rtr_instance = routers[router]
 
