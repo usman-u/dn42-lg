@@ -5,7 +5,7 @@
 
 {% if router and router|length %}
 <h2>
-{{ router }}: BGP routes advertised to <code> {{ peer }} </code>
+<code>{{ router }}</code>: prefixes advertised to <code>{{ desc }}</code> on  <code> {{ peer }} </code>
 </h2>
 <br>
 {% endif %}

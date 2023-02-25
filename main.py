@@ -143,6 +143,7 @@ def get_bgp_peers():
 @app.route("/looking_glass/get_bgp_peer_routes/", methods=["GET", "POST"])
 def get_bgp_peer_received_routes():
     router = request.args.get("router")
+    desc = request.args.get("desc")
     peer = request.args.get("peer")
 
     rtr_instance = routers[router]
@@ -153,7 +154,7 @@ def get_bgp_peer_received_routes():
     result = rtr_instance.get_bgp_peer_received_routes(peer)
 
     return render_template(
-        "get_bgp_peer_received_routes.html", router=router, result=result, peer=peer
+        "get_bgp_peer_received_routes.html", router=router, result=result, peer=peer, desc=desc
     )
 
 
@@ -161,6 +162,7 @@ def get_bgp_peer_received_routes():
 def get_bgp_peer_advertised_routes():
     router = request.args.get("router")
     peer = request.args.get("peer")
+    desc = request.args.get("desc")
 
     rtr_instance = routers[router]
 
@@ -170,7 +172,7 @@ def get_bgp_peer_advertised_routes():
     result = rtr_instance.get_bgp_peer_advertised_routes(peer)
 
     return render_template(
-        "get_bgp_peer_advertised_routes.html", router=router, result=result, peer=peer
+        "get_bgp_peer_advertised_routes.html", router=router, result=result, peer=peer, desc=desc
     )
 
 
