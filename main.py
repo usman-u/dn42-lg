@@ -11,6 +11,7 @@ import sys
 import concurrent.futures
 import dn42_whois
 from inventory import routers
+from validations import is_valid_address
 
 app = Flask(__name__)  # create an instance of the Flask class
 app.config["SECRET_KEY"] = os.getenv("flask_secret_key")  # secret key
@@ -145,6 +146,10 @@ def get_bgp_peer_received_routes():
     router = request.args.get("router")
     desc = request.args.get("desc")
     peer = request.args.get("peer")
+
+    # injection attack check
+    if not is_valid_address(peer):
+        return render_template("error.html", input=peer ,error="Invalid IP address. Please try again. If you're trying to inject something, please stop.")
 
     rtr_instance = routers[router]
 
