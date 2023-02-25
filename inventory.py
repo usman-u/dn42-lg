@@ -19,7 +19,7 @@ routers = {
         username="test",
         password=os.getenv("us_ca1_password"),
         use_keys=False,
-        url="https://172.22.132.167/graphql",
+        url="https://172.22.132.164/graphql",
         key=os.getenv("apikey"),
     ),
 }

@@ -75,7 +75,11 @@ def looking_glass():
 def get_routes():
     router = request.args.get("router")
 
-    rtr_instance = routers[router]
+    try:
+        rtr_instance = routers[router]
+    except KeyError:
+        return render_template("error.html", input=router, error="Invalid router name. Please try again.")
+
     inet = rtr_instance.get_all_routes("inet")
     inet6 = rtr_instance.get_all_routes("inet6")
 
@@ -86,7 +90,10 @@ def get_routes():
 def get_route_summary():
     router = request.args.getlist("router")
 
-    rtr_instance = routers[router]
+    try:
+        rtr_instance = routers[router]
+    except KeyError:
+        return render_template("error.html", input=router, error="Invalid router name. Please try again.")
 
     inet = rtr_instance.get_route_summary("inet")
     inet6 = rtr_instance.get_route_summary("inet6")
@@ -108,7 +115,10 @@ def get_summary_bgp():
             for router in routers
         }
         for future in concurrent.futures.as_completed(future_to_router):
-            router = future_to_router[future]
+            try:
+                router = routers[router]
+            except KeyError:
+                return render_template("error.html", input=router, error="Invalid router name. Please try again.")
             try:
                 result = future.result()
                 results.append(result)
@@ -124,7 +134,14 @@ def get_bgp_peer():
     peer = request.args.get("peer")
     desc = request.args.get("desc")
 
-    result = routers[router].get_bgp_peer(peer)
+    # injection attack check
+    if not is_valid_address(peer):
+        return render_template("error.html", input=peer ,error="Invalid Peer IP address. Please try again. If you're trying to inject something, please stop.")
+
+    try:
+        result = routers[router].get_bgp_peer(peer)
+    except KeyError:
+        return render_template("error.html", input=router, error="Invalid router name. Please try again. If you're trying to inject something, please stop.")
 
     return render_template(
         "get_bgp_peer.html", router=router, result=result, peer=peer, desc=desc
@@ -135,7 +152,11 @@ def get_bgp_peer():
 def get_bgp_peers():
     router = request.args.get("router")
 
-    result = routers[router].get_bgp_peers()
+    try:
+        result = routers[router].get_bgp_peers()
+    except KeyError:
+        return render_template("error.html", input=router, error="Invalid router name. Please try again. If you're trying to inject something, please stop.")
+
     return render_template(
         "get_bgp_peers.html", result=result, router=router, time=datetime.now()
     )
@@ -151,7 +172,10 @@ def get_bgp_peer_received_routes():
     if not is_valid_address(peer):
         return render_template("error.html", input=peer ,error="Invalid Peer IP address. Please try again. If you're trying to inject something, please stop.")
 
-    rtr_instance = routers[router]
+    try:
+        rtr_instance = routers[router]
+    except KeyError:
+        return render_template("error.html", input=router, error="Invalid router name. Please try again.")
 
     if not rtr_instance.check_ssh():  # check if SSH session is active
         rtr_instance.init_ssh()  # if not, create a new SSH session
@@ -173,7 +197,10 @@ def get_bgp_peer_advertised_routes():
     if not is_valid_address(peer):
         return render_template("error.html", input=peer ,error="Invalid Peer IP address. Please try again. If you're trying to inject something, please stop.")
 
-    rtr_instance = routers[router]
+    try:
+        rtr_instance = routers[router]
+    except KeyError:
+        return render_template("error.html", input=router, error="Invalid router name. Please try again.")
 
     if not rtr_instance.check_ssh():
         rtr_instance.init_ssh()
@@ -198,7 +225,10 @@ def whois():
 def get_interfaces():
     router = request.args.get("router")
     
-    rtr_instance = routers[router]
+    try:
+        rtr_instance = routers[router]
+    except KeyError:
+        return render_template("error.html", input=router, error="Invalid router name. Please try again.")
 
     if not rtr_instance.check_ssh():
         rtr_instance.init_ssh()
