@@ -159,7 +159,7 @@ def get_bgp_peer_received_routes():
 
 @app.route("/looking_glass/get_bgp_peer_advertised_routes/", methods=["GET", "POST"])
 def get_bgp_peer_advertised_routes():
-    router = request.args.getlist("router")
+    router = request.args.get("router")
     peer = request.args.get("peer")
 
     rtr_instance = routers[router]
