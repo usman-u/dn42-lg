@@ -1,6 +1,6 @@
 from flask import Flask, redirect, url_for, render_template, flash, request
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, BooleanField, SelectField
+from wtforms import StringField, SubmitField, BooleanField, SelectField, RadioField
 from wtforms.validators import DataRequired, Email, InputRequired
 from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
@@ -19,14 +19,11 @@ Bootstrap(app)
 
 
 class LookingGlassForm(FlaskForm):
-    # device = QuerySelectField(query_factory=Devices.query.all())
-    # all_devices = Devices.query.all()
-    # device = SelectField(u"Device Name", choices=[all_devices, "test", "test2"])
-    # print (all_devices)
-
     device = SelectField(
-        "Device Name", choices=["fr-lil1.usman.dn42", "uk-lon3.usman.dn42"]
+        "Router", choices=["fr-lil1.usman.dn42", "us-ca1.usman.dn42"]
     )
+
+    device = RadioField('Router', choices=[('fr_lil1', 'fr-lil1.usman.dn42'), ('us_ca1', 'us-ca1.usman.dn42')])
 
     operation = SelectField("Operation", choices=["BGP Peer Summary"])
     target = StringField("Target", render_kw={"placeholder": "1.1.1.1"})
@@ -41,34 +38,31 @@ def home():
 
 @app.route("/looking_glass/", methods=["GET", "POST"])
 def looking_glass():
-    device = ""
-    operation = ""
-    target = ""
     form = LookingGlassForm()
 
-    if form.validate_on_submit():
-        # device = form.device.data
+    if request.method == 'POST':
         device = form.device.data
         operation = form.operation.data
         target = form.target.data
 
-        # form.device.data = ""
-        # form.operation.data = ""
-        # form.target.data = ""
+        if operation == 'BGP Peer Summary':
+            device = form.device.data
+            operation = form.operation.data
+            target = form.target.data
 
-        flash("Form submitted successfully!")
-        print(form.operation.data)
-        # if form.operation.data == "Show IP Route To":
+            if operation == 'BGP Peer Summary':
+                result = (operation, target)
+                result_url = url_for("get_bgp_peers", router=device)
 
-        return redirect(url_for("", router=form.device.data, target=form.target.data))
+                return redirect(result_url)
 
-    return render_template(
-        "looking_glass.html",
-        form=form,
-        device=device,
-        operation=operation,
-        target=target,
-    )
+            else:
+                result_url = None
+
+    else:
+        result_url = None
+        
+    return render_template('looking_glass.html', form=form)
 
 
 @app.route("/looking_glass/get_all_routes/", methods=["GET", "POST"])
