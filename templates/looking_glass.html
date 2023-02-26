@@ -24,15 +24,24 @@
     </div>
 
     <div class="col-sm-6">
+
       <div class="form-group">
-        <label class="font-weight-bold"> <b>{{ form.operation.label }}</b></label>
-        {{ form.operation(class="form-control") }}
+        <label class="font-weight-bold"> <b>{{ form.query.label }}</b></label>
+        {% for subfield in form.query %}
+          <div class="form-check">
+            {{ subfield(class="form-check-input") }}
+            <label class="form-check-label">{{ subfield.label }}</label>
+          </div>
+        {% endfor %}
       </div>
+
+      <br>
       <div class="form-group">
-        <label class="font-weight-bold">{{ form.target.label }}</label>
+        <label class="font-weight-bold"> <b>{{ form.target.label }}</b></label>
         {{ form.target(class="form-control", placeholder="1.1.1.1") }}
       </div>
     </div>
+
   </div>
   <br>
   <div class="form-group row">
@@ -42,7 +51,9 @@
   </div>
 </form>
 
-
+{% if result %}
+{{ result }}
+{% endif %}
 
 
 {% endblock %}

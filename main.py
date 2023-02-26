@@ -19,13 +19,24 @@ Bootstrap(app)
 
 
 class LookingGlassForm(FlaskForm):
-    device = SelectField(
-        "Router", choices=["fr-lil1.usman.dn42", "us-ca1.usman.dn42"]
+    device = SelectField("Router", choices=["fr-lil1.usman.dn42", "us-ca1.usman.dn42"])
+
+    device = RadioField(
+        "Router",
+        choices=[("fr_lil1", "fr-lil1.usman.dn42"), ("us_ca1", "us-ca1.usman.dn42")],
+        validators=[InputRequired()],
     )
 
-    device = RadioField('Router', choices=[('fr_lil1', 'fr-lil1.usman.dn42'), ('us_ca1', 'us-ca1.usman.dn42')])
+    query = RadioField(
+        "Query",
+        choices=[
+            ("show ip bgp summary", "show ip bgp summary"),
+            ("show interfaces", "show interfaces"),
+        ],
+        validators=[InputRequired()],
+    )
 
-    operation = SelectField("Operation", choices=["BGP Peer Summary"])
+    # operation = SelectField("Operation", choices=["BGP Peer Summary"])
     target = StringField("Target", render_kw={"placeholder": "1.1.1.1"})
     submit = SubmitField("Submit")
 
@@ -39,30 +50,22 @@ def home():
 @app.route("/looking_glass/", methods=["GET", "POST"])
 def looking_glass():
     form = LookingGlassForm()
+    result = None
 
-    if request.method == 'POST':
+    if request.method == "POST":
         device = form.device.data
-        operation = form.operation.data
+        query = form.query.data
         target = form.target.data
 
-        if operation == 'BGP Peer Summary':
-            device = form.device.data
-            operation = form.operation.data
-            target = form.target.data
+        if query == "show ip bgp summary":
+            result_url = url_for("get_bgp_peers", router=device)
+            return redirect(result_url)
 
-            if operation == 'BGP Peer Summary':
-                result = (operation, target)
-                result_url = url_for("get_bgp_peers", router=device)
+        if query == "show interfaces":
+            result_url = url_for("get_interfaces", router=device)
+            return redirect(result_url)
 
-                return redirect(result_url)
-
-            else:
-                result_url = None
-
-    else:
-        result_url = None
-        
-    return render_template('looking_glass.html', form=form)
+    return render_template("looking_glass.html", form=form, result=result)
 
 
 @app.route("/looking_glass/get_all_routes/", methods=["GET", "POST"])
@@ -72,7 +75,9 @@ def get_routes():
     try:
         rtr_instance = routers[router]
     except KeyError:
-        return render_template("error.html", input=router, error="Invalid router name. Please try again.")
+        return render_template(
+            "error.html", input=router, error="Invalid router name. Please try again."
+        )
 
     inet = rtr_instance.get_all_routes("inet")
     inet6 = rtr_instance.get_all_routes("inet6")
@@ -87,7 +92,9 @@ def get_route_summary():
     try:
         rtr_instance = routers[router]
     except KeyError:
-        return render_template("error.html", input=router, error="Invalid router name. Please try again.")
+        return render_template(
+            "error.html", input=router, error="Invalid router name. Please try again."
+        )
 
     inet = rtr_instance.get_route_summary("inet")
     inet6 = rtr_instance.get_route_summary("inet6")
@@ -112,7 +119,11 @@ def get_summary_bgp():
             try:
                 router = routers[router]
             except KeyError:
-                return render_template("error.html", input=router, error="Invalid router name. Please try again.")
+                return render_template(
+                    "error.html",
+                    input=router,
+                    error="Invalid router name. Please try again.",
+                )
             try:
                 result = future.result()
                 results.append(result)
@@ -130,12 +141,20 @@ def get_bgp_peer():
 
     # injection attack check
     if not is_valid_address(peer):
-        return render_template("error.html", input=peer ,error="Invalid Peer IP address. Please try again. If you're trying to inject something, please stop.")
+        return render_template(
+            "error.html",
+            input=peer,
+            error="Invalid Peer IP address. Please try again. If you're trying to inject something, please stop.",
+        )
 
     try:
         result = routers[router].get_bgp_peer(peer)
     except KeyError:
-        return render_template("error.html", input=router, error="Invalid router name. Please try again. If you're trying to inject something, please stop.")
+        return render_template(
+            "error.html",
+            input=router,
+            error="Invalid router name. Please try again. If you're trying to inject something, please stop.",
+        )
 
     return render_template(
         "get_bgp_peer.html", router=router, result=result, peer=peer, desc=desc
@@ -149,7 +168,11 @@ def get_bgp_peers():
     try:
         result = routers[router].get_bgp_peers()
     except KeyError:
-        return render_template("error.html", input=router, error="Invalid router name. Please try again. If you're trying to inject something, please stop.")
+        return render_template(
+            "error.html",
+            input=router,
+            error="Invalid router name. Please try again. If you're trying to inject something, please stop.",
+        )
 
     return render_template(
         "get_bgp_peers.html", result=result, router=router, time=datetime.now()
@@ -164,12 +187,18 @@ def get_bgp_peer_received_routes():
 
     # injection attack check
     if not is_valid_address(peer):
-        return render_template("error.html", input=peer ,error="Invalid Peer IP address. Please try again. If you're trying to inject something, please stop.")
+        return render_template(
+            "error.html",
+            input=peer,
+            error="Invalid Peer IP address. Please try again. If you're trying to inject something, please stop.",
+        )
 
     try:
         rtr_instance = routers[router]
     except KeyError:
-        return render_template("error.html", input=router, error="Invalid router name. Please try again.")
+        return render_template(
+            "error.html", input=router, error="Invalid router name. Please try again."
+        )
 
     if not rtr_instance.check_ssh():  # check if SSH session is active
         rtr_instance.init_ssh()  # if not, create a new SSH session
@@ -177,7 +206,11 @@ def get_bgp_peer_received_routes():
     result = rtr_instance.get_bgp_peer_received_routes(peer)
 
     return render_template(
-        "get_bgp_peer_received_routes.html", router=router, result=result, peer=peer, desc=desc
+        "get_bgp_peer_received_routes.html",
+        router=router,
+        result=result,
+        peer=peer,
+        desc=desc,
     )
 
 
@@ -189,12 +222,18 @@ def get_bgp_peer_advertised_routes():
 
     # injection attack check
     if not is_valid_address(peer):
-        return render_template("error.html", input=peer ,error="Invalid Peer IP address. Please try again. If you're trying to inject something, please stop.")
+        return render_template(
+            "error.html",
+            input=peer,
+            error="Invalid Peer IP address. Please try again. If you're trying to inject something, please stop.",
+        )
 
     try:
         rtr_instance = routers[router]
     except KeyError:
-        return render_template("error.html", input=router, error="Invalid router name. Please try again.")
+        return render_template(
+            "error.html", input=router, error="Invalid router name. Please try again."
+        )
 
     if not rtr_instance.check_ssh():
         rtr_instance.init_ssh()
@@ -202,7 +241,11 @@ def get_bgp_peer_advertised_routes():
     result = rtr_instance.get_bgp_peer_advertised_routes(peer)
 
     return render_template(
-        "get_bgp_peer_advertised_routes.html", router=router, result=result, peer=peer, desc=desc
+        "get_bgp_peer_advertised_routes.html",
+        router=router,
+        result=result,
+        peer=peer,
+        desc=desc,
     )
 
 
@@ -218,11 +261,13 @@ def whois():
 @app.route("/looking_glass/get_interfaces/", methods=["GET", "POST"])
 def get_interfaces():
     router = request.args.get("router")
-    
+
     try:
         rtr_instance = routers[router]
     except KeyError:
-        return render_template("error.html", input=router, error="Invalid router name. Please try again.")
+        return render_template(
+            "error.html", input=router, error="Invalid router name. Please try again."
+        )
 
     if not rtr_instance.check_ssh():
         rtr_instance.init_ssh()
