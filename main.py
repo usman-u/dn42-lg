@@ -11,7 +11,7 @@ import sys
 import concurrent.futures
 import dn42_whois
 from inventory import routers
-from validations import is_valid_address
+from validations import is_valid_address, is_valid_network
 
 app = Flask(__name__)  # create an instance of the Flask class
 app.config["SECRET_KEY"] = os.getenv("flask_secret_key")  # secret key
@@ -31,13 +31,15 @@ class LookingGlassForm(FlaskForm):
         "Query",
         choices=[
             ("show ip bgp summary", "show ip bgp summary"),
+            ("show ip bgp route", "show ip bgp route ..."),
             ("show interfaces", "show interfaces"),
+            ("whois", "whois ..."),
         ],
         validators=[InputRequired()],
     )
 
     # operation = SelectField("Operation", choices=["BGP Peer Summary"])
-    target = StringField("Target", render_kw={"placeholder": "1.1.1.1"})
+    target = StringField("Target", render_kw={"placeholder": "e.g. fe80::abc0"})
     submit = SubmitField("Submit")
 
 
@@ -61,8 +63,16 @@ def looking_glass():
             result_url = url_for("get_bgp_peers", router=device)
             return redirect(result_url)
 
+        if query == "show ip bgp route":
+            result_url = url_for("get_bgp_route", prefix=target, router=device)
+            return redirect(result_url)
+
         if query == "show interfaces":
             result_url = url_for("get_interfaces", router=device)
+            return redirect(result_url)
+
+        if query == "whois":
+            result_url = url_for("whois", target=target)
             return redirect(result_url)
 
     return render_template("looking_glass.html", form=form, result=result)
@@ -160,6 +170,37 @@ def get_bgp_peer():
         "get_bgp_peer.html", router=router, result=result, peer=peer, desc=desc
     )
 
+
+@app.route("/looking_glass/get_bgp_route/", methods=["GET", "POST"])
+def get_bgp_route():
+    router = request.args.get("router")
+    prefix = request.args.get("prefix")
+    desc = request.args.get("desc")
+
+    # injection attack check
+    if not is_valid_network(prefix):
+        return render_template(
+            "error.html",
+            input=prefix,
+            error="Invalid BGP Preifx/IP address. Please try again. If you're trying to inject something, please stop.",
+        )
+
+    try:
+        rtr_instance = routers[router]
+        if not rtr_instance.check_ssh():  # check if SSH session is active
+            rtr_instance.init_ssh()  # if not, create a new SSH session
+        result = rtr_instance.get_bgp_route(prefix)
+
+    except KeyError:
+        return render_template(
+            "error.html",
+            input=router,
+            error="Invalid router name. Please try again. If you're trying to inject something, please stop.",
+        )
+
+    return render_template(
+        "get_bgp_route.html", router=router, result=result, prefix=prefix, desc=desc
+    )
 
 @app.route("/looking_glass/bgp_peers/", methods=["GET", "POST"])
 def get_bgp_peers():

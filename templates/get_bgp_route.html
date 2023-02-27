@@ -1,0 +1,14 @@
+{% extends "base.html" %} 
+{% block title %} BGP Route {%endblock%}
+{% block content %} 
+
+{% if router and router|length %}
+    <h2>
+        {{ router }}: show route for <code>{{ prefix }}</code>
+    </h2>
+    <br> 
+{% endif %}
+
+<pre>{{ result }}</pre> 
+
+{% endblock %}
