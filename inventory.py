@@ -16,7 +16,7 @@ routers = {
     "us_ca1": net_automation.Vyos(
         device_type="vyos",
         host="172.22.132.164",
-        username="test",
+        username="lg",
         password=os.getenv("us_ca1_password"),
         use_keys=False,
         url="https://172.22.132.164/graphql",
