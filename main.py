@@ -31,7 +31,8 @@ class LookingGlassForm(FlaskForm):
         "Query",
         choices=[
             ("show ip bgp summary", "show ip bgp summary"),
-            ("show ip bgp route", "show ip bgp route ..."),
+            ("show ip bgp route", "show ip bgp route <e.g. 172.20.0.53 > "),
+            ("show ip bgp peer", "show ip bgp peer <e.g. fe80::ade0>"),
             ("show interfaces", "show interfaces"),
             ("whois", "whois ..."),
         ],
@@ -65,6 +66,10 @@ def looking_glass():
 
         if query == "show ip bgp route":
             result_url = url_for("get_bgp_route", prefix=target, router=device)
+            return redirect(result_url)
+
+        if query == "show ip bgp peer":
+            result_url = url_for("get_bgp_peer", router=device, peer=target)
             return redirect(result_url)
 
         if query == "show interfaces":
@@ -164,6 +169,12 @@ def get_bgp_peer():
             "error.html",
             input=router,
             error="Invalid router name. Please try again. If you're trying to inject something, please stop.",
+        )
+    except TypeError:
+        return render_template(
+            "error.html",
+            input=peer,
+            error="Invalid Peer IP name. Please try again. If you're trying to inject something, please stop.",
         )
 
     return render_template(

@@ -1,15 +1,12 @@
 {% extends "base.html" %}
-{% block title %} {{ desc }} - {{ peer }} {%endblock%}
+{% block title %} {{ peer }} {%endblock%}
 
 {% block content %}
 
-{% if router and router|length %}
-<h2>{{ router }}: show ip bgp {{ peer }} ({{ desc }})</h2>
-<br>
-{% endif %}
-
+<h2>
+BGP neighbor is: <b>{{ peer }}</b>. {% if result['nbr_desc'] is defined-%}<b>({{ result['nbr_desc'] }})</b> {% endif %}
+</h2>
 <pre>
-BGP neighbor is: <b>{{ peer }}</b>. {% if result['nbr_desc'] is defined-%} Description: <b>{{ result['nbr_desc'] }}</b> {% endif %}
     BGP State: <b>{{ result["bgp_state"] }}</b> {% if result['bgp_state'] == 'Established' -%} Uptime: {{ result['bgp_timer_up_string'] }}. Since {{ result['bgp_timer_up_established_epoch']}} {% endif -%}
     Local role: {{ result["local_role"] }}, Remote role: {{ result["remote_role"] }}
     Local AS: <a  target=”_blank” rel="noopener" href="/looking_glass/whois/?target=as{{ result['local_as']}}">{{ result["local_as"] }}</a>
