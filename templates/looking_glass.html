@@ -65,9 +65,10 @@
 
 <h4>Example Queries:</h4>
   <ul>
-    <li><a target="_blank" rel="noopener" href="{{ url_for('get_bgp_peers', router='fr_lil1') }}"> show ip bgp summary </a> - shows the peers on the fr-lil1 router.</li>
-    <li><a target="_blank" rel="noopener" href="{{ url_for('get_bgp_peer', router='fr_lil1', peer='fe80::ade0', desc='DN42_kioubit-MPBGP') }}"> show ip bgp neighbor fe80::ade0 </a> - shows detail of the fe80::ade0 peer (kioubit).</li>
-    <li><a target="_blank" rel="noopener" href="{{ url_for('get_bgp_peer_advertised_routes', peer='fe80::ade0' , router='fr_lil1', desc='kioubit-MPBGP') }}"> show ip bgp advertised-routes fe80::ade0 </a> - shows routes advertised to the fe80::ade0 peer (kioubit).</li>
+    <li><a target="_blank" rel="noopener" href="{{ url_for('get_bgp_peers', router='fr_lil1') }}"> show ip bgp summary </a> - shows the peers on fr-lil1 router.</li>
+    <li><a target="_blank" rel="noopener" href="{{ url_for('get_bgp_route', router='fr_lil1', prefix='172.20.0.53/32') }}"> show ip bgp 172.20.0.53/32 </a> - shows the BGP routes for the 172.23.0.53/32 subnet (on fr-lil1) </li>
+    <li><a target="_blank" rel="noopener" href="{{ url_for('get_bgp_peer', router='fr_lil1', peer='fe80::ade0', desc='DN42_kioubit-MPBGP') }}"> show ip bgp neighbor fe80::ade0 </a> - shows detail of the fe80::ade0 peer (on fr-lil1).</li>
+    <li><a target="_blank" rel="noopener" href="{{ url_for('get_bgp_peer_advertised_routes', peer='fe80::ade0' , router='fr_lil1', desc='kioubit-MPBGP') }}"> show ip bgp advertised-routes fe80::ade0 </a> - shows routes advertised to the fe80::ade0 peer (on fr-lil1).</li>
   </ul>
 
 <hr>
