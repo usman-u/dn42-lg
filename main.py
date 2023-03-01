@@ -33,6 +33,8 @@ class LookingGlassForm(FlaskForm):
             ("show ip bgp summary", "show ip bgp summary"),
             ("show ip bgp route", "show ip bgp route <e.g. 172.20.0.53 > "),
             ("show ip bgp peer", "show ip bgp peer <e.g. fe80::ade0>"),
+            ("show ip bgp advertised-routes", "show ip bgp peer advertised-routes <e.g. fe80::ade0>"),
+            ("show ip bgp received-routes", "show ip bgp peer received routes <e.g. fe80::ade0>"),
             ("show interfaces", "show interfaces"),
             ("whois", "whois ..."),
         ],
@@ -72,10 +74,17 @@ def looking_glass():
             result_url = url_for("get_bgp_peer", router=device, peer=target)
             return redirect(result_url)
 
+        if query == "show ip bgp received-routes":
+            result_url = url_for("get_bgp_peer_received_routes", router=device, peer=target)
+            return redirect(result_url)
+
+        if query == "show ip bgp advertised-routes":
+            result_url = url_for("get_bgp_peer_advertised_routes", router=device, peer=target)
+            return redirect(result_url)
+
         if query == "show interfaces":
             result_url = url_for("get_interfaces", router=device)
             return redirect(result_url)
-
         if query == "whois":
             result_url = url_for("whois", target=target)
             return redirect(result_url)
@@ -159,22 +168,23 @@ def get_bgp_peer():
         return render_template(
             "error.html",
             input=peer,
-            error="Invalid Peer IP address. Please try again. If you're trying to inject something, please stop.",
+            error="Invalid Peer IP. Please try again. It's likely that the peer IP doesn't exist on this router - see the 'show ip bgp summary' for a list of peer IP addresses.",
         )
 
     try:
         result = routers[router].get_bgp_peer(peer)
-    except KeyError:
+
+    except KeyError:              # accounts for when the router name is wrong
         return render_template(
             "error.html",
             input=router,
             error="Invalid router name. Please try again. If you're trying to inject something, please stop.",
         )
-    except TypeError:
+    except TypeError:             # accounts for when the peer IP doesn't exist
         return render_template(
             "error.html",
             input=peer,
-            error="Invalid Peer IP name. Please try again. If you're trying to inject something, please stop.",
+            error="Invalid Peer IP. Please try again. It's likely that the peer IP doesn't exist on this router - see the 'show ip bgp summary' for a list of peer IPs on this router.",
         )
 
     return render_template(
