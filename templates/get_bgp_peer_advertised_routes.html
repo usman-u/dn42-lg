@@ -5,7 +5,14 @@
 
 {% if router and router|length %}
 <h2>
-<code>{{ router }}</code>: prefixes advertised to <code>{{ desc }}</code> on  <code> {{ peer }} </code>
+    {{ router }}: prefixes advertised 
+    {% if desc and desc | length -%}
+    to <code>{{ desc }}</code> on 
+    <code> {{ peer }} </code>
+    {% else -%}
+    to <code> {{ peer }} </code>
+    {% endif %}
+
 </h2>
 <br>
 {% endif %}
