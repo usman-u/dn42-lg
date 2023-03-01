@@ -1,0 +1,14 @@
+{% extends "base.html" %} 
+{% block title %} OSPF Neighbors - {{ router }} {%endblock%}
+{% block content %} 
+
+{% if router and router|length %}
+    <h2>
+        {{ router }}: show ip ospf neighbors
+    </h2>
+    <br> 
+{% endif %}
+
+<pre>{{ result }}</pre> 
+
+{% endblock %}

@@ -35,6 +35,8 @@ class LookingGlassForm(FlaskForm):
             ("show ip bgp peer", "show ip bgp peer <e.g. fe80::ade0>"),
             ("show ip bgp advertised-routes", "show ip bgp peer advertised-routes <e.g. fe80::ade0>"),
             ("show ip bgp received-routes", "show ip bgp peer received routes <e.g. fe80::ade0>"),
+            ("show ip ospf routes", "show ip ospf routes"),
+            ("show ip ospf neighbors", "show ip ospf neighbors"),
             ("show interfaces", "show interfaces"),
             ("whois", "whois ..."),
         ],
@@ -82,6 +84,14 @@ def looking_glass():
             result_url = url_for("get_bgp_peer_advertised_routes", router=device, peer=target)
             return redirect(result_url)
 
+        if query == "show ip ospf routes":
+            result_url = url_for("get_ospf_routes", router=device)
+            return redirect(result_url)
+
+        if query == "show ip ospf neighbors":
+            result_url = url_for("get_ospf_neighbors", router=device)
+            return redirect(result_url)
+
         if query == "show interfaces":
             result_url = url_for("get_interfaces", router=device)
             return redirect(result_url)
@@ -91,6 +101,39 @@ def looking_glass():
 
     return render_template("looking_glass.html", form=form, result=result)
 
+
+@app.route("/looking_glass/get_ospf_routes/", methods=["GET", "POST"])
+def get_ospf_routes():
+    router = request.args.get("router")
+
+    try:
+        rtr_instance = routers[router]
+        if not rtr_instance.check_ssh():  # check if SSH session is active
+            rtr_instance.init_ssh()       # if not, create a new SSH session
+        result = rtr_instance.get_ospf_route_all()
+    except KeyError:
+        return render_template(
+            "error.html", input=router, error="Invalid router name. Please try again."
+        )
+
+    return render_template("get_ospf_routes.html", router=router, result=result)
+
+
+@app.route("/looking_glass/get_ospf_neighbors/", methods=["GET", "POST"])
+def get_ospf_neighbors():
+    router = request.args.get("router")
+
+    try:
+        rtr_instance = routers[router]
+        if not rtr_instance.check_ssh():  # check if SSH session is active
+            rtr_instance.init_ssh()       # if not, create a new SSH session
+        result = rtr_instance.get_ospf_neighbors()
+    except KeyError:
+        return render_template(
+            "error.html", input=router, error="Invalid router name. Please try again."
+        )
+
+    return render_template("get_ospf_neighbors.html", router=router, result=result)
 
 @app.route("/looking_glass/get_all_routes/", methods=["GET", "POST"])
 def get_routes():
