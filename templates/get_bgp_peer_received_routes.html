@@ -1,12 +1,12 @@
 {% extends "base.html" %} {% block title %} BGP Route {%endblock%} {% block content %} {% if router and router|length %}
 
 <h2>
-    {{ router }}: prefixes advertised 
+    {{ router }}: prefixes received 
     {% if desc and desc | length -%}
-    to <code>{{ desc }}</code> on 
+    from <code>{{ desc }}</code> on 
     <code> {{ peer }} </code>
     {% else -%}
-    to <code> {{ peer }} </code>
+    from <code> {{ peer }} </code>
     {% endif %}
 </h2>
 <br> {% endif %}
