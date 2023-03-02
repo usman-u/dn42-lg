@@ -3,9 +3,8 @@
 {% block title %} BGP Summary {% endblock %}
 
 {% block content %}
-
 {% for result in range(results|length) -%}
-    <div class="p-3 mb-5 bg-body rounded">
+    <div class="p3 mb-5 bg-body rounded">
         <table class = "bgp table table-hover">
             <h3>
                 {{ routers[result] }}: show ip bgp summary
@@ -27,14 +26,14 @@
                 <div id="results">
                     {% for peer in results[result] %}
                     <tr>
-                        <td> <a href="{{ url_for ('get_bgp_peer', router=router, peer=peer['neighbor'], desc=peer['desc'])  }}"  > {{peer["desc"]}} </td>
+                        <td> <a href="{{ url_for ('get_bgp_peer', router=routers[result], peer=peer['neighbor'], desc=peer['desc'])  }}"  > {{peer["desc"]}} </td>
                         <td> {{peer["remote_as"]}} </td>
                         <td> {{peer["neighbor"]}} </td>
                         <td> {{peer["state"]}} </td>
                         <td> {{peer["id_type"]}} </td>
                         <td> {{peer["peer_uptime"]}}</td>
-                        <td> <a href="{{ url_for ('get_bgp_peer_received_routes', router=router, peer=peer['neigbor']) }}" >  {{peer["pfx_rcd"]}}  </a></td>
-                        <td> <a href="{{ url_for ('get_bgp_peer_advertised_routes', router=router, peer=peer['neigbor']) }}" >  {{peer["pfx_rcd"]}}  </a></td>
+                        <td> <a href="{{ url_for ('get_bgp_peer_received_routes', router=routers[result], peer=peer['neighbor']) }}" >  {{peer["pfx_rcd"]}}  </a></td>
+                        <td> <a href="{{ url_for ('get_bgp_peer_advertised_routes', router=routers[result], peer=peer['neighbor']) }}" >  {{peer["pfx_rcd"]}}  </a></td>
                     </tr>
                     {% endfor %}
                 </div>
@@ -42,6 +41,7 @@
         </table>
     </div>
 {% endfor %}
+
 {% endblock%} 
 
 {% block scripts %}
