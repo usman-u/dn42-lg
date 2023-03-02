@@ -9,17 +9,14 @@
         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
             <div class="navbar-nav">
 
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('home') }}">BGP Peer Summary</a>
-                </li>
 
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('looking_glass') }}">Looking Glass</a>
+                    <a class="nav-link" href="{{ url_for('looking_glass') }}">New Query</a>
                 </li>
 
 
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('get_bgp_peers', router='fr_lil1') }}">fr-lil1.dn42</a>
+                    <a class="nav-link" href="{{ url_for('get_summary_bgp', router=['fr_lil1', 'us_ca1']) }}">BGP PEER SUMMARY</a>
                 </li>
 
             </div>

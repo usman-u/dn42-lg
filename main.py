@@ -154,7 +154,7 @@ def get_routes():
 
 @app.route("/looking_glass/route_summary/", methods=["GET", "POST"])
 def get_route_summary():
-    router = request.args.getlist("router")
+    router = request.args.get("router")
 
     try:
         rtr_instance = routers[router]
@@ -173,31 +173,20 @@ def get_route_summary():
 
 @app.route("/looking_glass/summary/bgp/", methods=["GET", "POST"])
 def get_summary_bgp():
-    routers = request.args.getlist("routers")
+    url_routers = request.args.getlist("router")
 
     results = []
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_to_router = {
-            executor.submit(routers[router].get_bgp_peers()): router
-            for router in routers
-        }
-        for future in concurrent.futures.as_completed(future_to_router):
-            try:
-                router = routers[router]
-            except KeyError:
-                return render_template(
-                    "error.html",
-                    input=router,
-                    error="Invalid router name. Please try again.",
-                )
-            try:
-                result = future.result()
-                results.append(result)
-            except Exception as exc:
-                print(f"{router} generated an exception: {exc}")
+    for router in url_routers:
+        try:
+            result = routers[router].get_bgp_peers()
+            results.append(result)
+        except KeyError:
+            return render_template(
+                "error.html", input=router, error="Invalid router name. Please try again."
+            )
 
-    return render_template("summary_bgp.html", results=results, routers=routers)
+    return render_template("summary_bgp.html", results=results, routers=url_routers)
 
 
 @app.route("/looking_glass/get_bgp_peer/", methods=["GET", "POST"])
