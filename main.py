@@ -175,16 +175,20 @@ def get_route_summary():
 def get_summary_bgp():
     url_routers = request.args.getlist("router")
 
-    results = []
-
-    for router in url_routers:
-        try:
-            result = routers[router].get_bgp_peers()
-            results.append(result)
-        except KeyError:
-            return render_template(
-                "error.html", input=router, error="Invalid router name. Please try again."
-            )
+    results = [None] * len(url_routers)
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_router = {(router, i): executor.submit(routers[router].get_bgp_peers) for i, router in enumerate(url_routers)}
+        for future in concurrent.futures.as_completed(future_to_router.values()):
+            for router, i in future_to_router.keys():
+                if future_to_router[(router, i)] == future:
+                    break
+            try:
+                result = future.result()
+                results[i] = result
+            except KeyError:
+                return render_template(
+                    "error.html", input=router, error="Invalid router name. Please try again."
+                )
 
     return render_template("summary_bgp.html", results=results, routers=url_routers)
 
