@@ -76,4 +76,4 @@ Press CTRL+C to quit
 # Deploying the Flask Application
 * Flask Apps can be deployed in a variety of ways.
 * I deployed it using Gunicorn, Systemd, and Nginx.
-* See Flask's [Deployment Options](https://flask.palletsprojects.com/en/1.1.x/deploying/) and [this Digital Ocean Blog](https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-gunicorn-and-nginx-on-ubuntu-18-04) for more information.
+* See Flask's [Deployment Options](https://flask.palletsprojects.com/en/2.2.x/deploying/) and [this great Digital Ocean Blog](https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-gunicorn-and-nginx-on-ubuntu-18-04) for more information.
