@@ -51,8 +51,9 @@ class LookingGlassForm(FlaskForm):
 
 # ROUTES
 @app.route("/")  # route for the home page
-def home():
-    return redirect(url_for("looking_glass"))
+def index():
+    return render_template("index.html")
+    # return redirect(url_for("looking_glass"))
 
 
 @app.route("/looking_glass/", methods=["GET", "POST"])

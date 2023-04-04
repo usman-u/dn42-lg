@@ -9,14 +9,6 @@
 
 <hr>
 
-<ul>
-  <li>Welcome to <a target="_blank" rel="noopener" href="https://explorer.burble.com/#/aut-num/AS4242421869">AS4242421869</a>'s Looking Glass, part of the <a target="_blank" rel="noopener" href="https://dn42.eu">DN42 network.</a> </li>
-  <li>Developed by <a target="_blank" rel="noopener" href="https://blog.usman.network">Usman.</a> </li>
-  <li>More info at <a target="_blank" rel="noopener" href="https://blog.usman.network"> blog.usman.network. </a> </li>
-</ul>
-
-<hr>
-
 <form method="POST" action="{{ url_for('looking_glass') }}" class="bg-light py-4 px-3 rounded ">
   <div class="row">
     <div class="col-sm-6">
@@ -73,19 +65,6 @@
   </ul>
 
 <hr>
-
-
-<br>
-
-<h2> Network Topology</h2>
-<br>
-
-<img src="{{ url_for('static', filename='DN42.png') }}" alt="DN42 Network Map" width="100%" height="100%">
-
-<br>
-<br>
-<br>
-<br>
 
 {% if result %}
 {{ result }}
