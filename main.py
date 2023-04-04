@@ -5,7 +5,7 @@ from wtforms.validators import DataRequired, Email, InputRequired
 from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
 from datetime import datetime
-from net_automation import net_automation
+from net_automation import Vyos
 import os
 import sys
 import concurrent.futures
@@ -30,6 +30,7 @@ class LookingGlassForm(FlaskForm):
     query = RadioField(
         "Query",
         choices=[
+            ("show ip route", "show ip route <e.g. 172.20.0.53>"),
             ("show ip bgp summary", "show ip bgp summary"),
             ("show ip bgp route", "show ip bgp route <e.g. 172.20.0.53 > "),
             ("show ip bgp peer", "show ip bgp peer <e.g. fe80::ade0>"),
@@ -63,6 +64,10 @@ def looking_glass():
         device = form.device.data
         query = form.query.data
         target = form.target.data
+
+        if query == "show ip route":
+            result_url = url_for("get_route", router=device, prefix=target)
+            return redirect(result_url)
 
         if query == "show ip bgp summary":
             result_url = url_for("get_bgp_peers", router=device)
@@ -191,6 +196,41 @@ def get_summary_bgp():
                 )
 
     return render_template("summary_bgp.html", results=results, routers=url_routers)
+
+@app.route("/looking_glass/get_route/", methods=["GET", "POST"])
+def get_route():
+    router = request.args.get("router")
+    prefix = request.args.get("prefix")
+    desc = request.args.get("desc")
+
+    # injection attack check
+    if not is_valid_network(prefix):
+        return render_template(
+            "error.html",
+            input=prefix,
+            error=f"Invalid IP address/prefix: {prefix}",
+        )
+
+    try:
+        result = routers[router].get_route(prefix, "inet")
+
+    except KeyError:              # accounts for when the router name is wrong
+        return render_template(
+            "error.html",
+            input=router,
+            error="Invalid router name. Please try again. If you're trying to inject something, please stop.",
+        )
+    except TypeError:             # accounts for when the peer IP doesn't exist
+        return render_template(
+            "error.html",
+            input=prefix,
+            error="Invalid Peer IP. Please try again. It's likely that the peer IP doesn't exist on this router - see the 'show ip bgp summary' for a list of peer IPs on this router.",
+        )
+
+    return render_template(
+        "get_route.html", router=router, result=result, prefix=prefix
+    )
+
 
 
 @app.route("/looking_glass/get_bgp_peer/", methods=["GET", "POST"])

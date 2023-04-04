@@ -1,0 +1,36 @@
+{% extends "base.html" %} 
+{% block title %} ip route - {{ prefix }}{%endblock%}
+{% block content %} 
+
+<h2> To do; under construction </h2>
+
+<br>
+<br>
+<br>
+{{ result }}
+
+
+
+{% for i in result[0] -%}
+{{ i }}
+{% endfor -%}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $('.bgp').DataTable({
+            responsive: true,
+            paging: false, info: false, searching: false,
+            
+            "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+
+                const colour = aData[3] != "Established" ? '#f5c6cb' : '#c3e6cb';
+
+                $(nRow).css('background-color', colour)
+            }
+        });
+    })
+</script>
+{% endblock %}
