@@ -23,6 +23,7 @@ python-whois = "^0.8.0"
 ipaddress = "^1.0.23"
 black = "^23.1.0"
 gunicorn = "^20.1.0"
+flask-login = "^0.6.2"
 
 
 [build-system]

@@ -1,7 +1,8 @@
-from flask import Flask, redirect, url_for, render_template, flash, request
+from flask import Flask, redirect, url_for, render_template, flash, request, session
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, BooleanField, SelectField, RadioField
-from wtforms.validators import DataRequired, Email, InputRequired
+from wtforms import StringField, SubmitField, BooleanField, SelectField, RadioField, PasswordField
+from wtforms.validators import DataRequired, Email, InputRequired, ValidationError
+from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
 from datetime import datetime
@@ -12,11 +13,15 @@ import concurrent.futures
 import dn42_whois
 from inventory import routers
 from validations import is_valid_address, is_valid_network
+import dn42_api
+
 
 app = Flask(__name__)  # create an instance of the Flask class
 app.config["SECRET_KEY"] = os.getenv("flask_secret_key")  # secret key
 Bootstrap(app)
 
+# from auth import auth
+# app.register_blueprint(auth)
 
 class LookingGlassForm(FlaskForm):
     device = SelectField("Router", choices=["fr-lil1.usman.dn42", "us-ca1.usman.dn42"])
@@ -419,6 +424,153 @@ def get_interfaces():
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template("404.html"), 404
+
+
+login_manager = LoginManager(app)
+
+
+class User(UserMixin):
+    def __init__(self, id, asn):
+        self.id = id
+        self.asn=asn
+
+@login_manager.unauthorized_handler
+def unauthorized_hanlder():
+    return redirect(url_for('enter_asn'))
+
+@login_manager.user_loader
+def load_user(user_id):
+    # Fetch the user from your data source based on the user_id
+    # Return an instance of the User model
+    asn = session['asn']
+    return User(user_id, asn)
+
+
+def validate_asn(form, field):
+    asn = field.data
+
+    asn = asn.upper()
+
+    if not asn.startswith("AS"):
+        raise ValidationError("ASN must start with 'AS'")
+    
+    asn_number = asn[2:]
+
+
+    try:
+        asn_int = int(asn_number)
+
+    except ValueError:
+        raise ValidationError("Invalid ASN range. Must be a valid DN42 BGP ASN. BGP person object(s) must have email(s).")
+
+    if asn_int < 1 or asn_int > 4294967295:
+        raise ValidationError("Invalid ASN range. Must be a valid DN42 ASN.")
+
+    if not dn42_api.aut_num_exists(asn):
+        raise ValidationError("ASN not in DN42 database. Try Again.")
+    
+    if not dn42_api.get_persons_emails(dn42_api.get_aut_num_bgp_persons(asn)):
+        raise ValidationError("No emails found related to the entered ASN. Ensure your person objects in the DN42 database have emails.")
+    
+
+
+
+class ASNForm(FlaskForm):
+    asn = StringField('Enter your DN42 ASN. e.g. AS4242421869', validators=[DataRequired(), validate_asn])
+    submit = SubmitField('Next')
+class EmailForm(FlaskForm):
+    email = SelectField('Email Address', coerce=int)
+    submit = SubmitField('Next')
+
+class VerificationForm(FlaskForm):
+    verification_code = StringField('Verification Code', validators=[DataRequired()])
+    submit = SubmitField('Verify')
+
+@app.route('/verify_email', methods=['GET', 'POST'])
+def verify_email():
+    if 'selected_email' not in session or 'verification_code' not in session:
+        return redirect(url_for('enter_asn'))
+    
+
+    form = VerificationForm()
+
+    if form.validate_on_submit():
+        entered_code = form.verification_code.data
+
+        # Successful verification. 
+        # Where emailed code = Entered Code 
+        if entered_code == session['verification_code']:
+            session['verified_email'] = session['selected_email']
+            
+            # Creates an intance of User with the verified email
+            # And logs them in, using flask_login
+            user = User(session['verified_email'], session['asn'])
+            login_user(user)
+
+            return redirect(url_for('profile'))
+        else:
+            form.verification_code.errors.append('Invalid verification code. Recheck your code or contact dn42peering@usman.network')
+
+    return render_template('login/verify_email.html', form=form)
+
+
+
+@app.route('/select_email', methods=['GET', 'POST'])
+def select_email():
+
+    # gets email addrs from current user session
+    # checks whether the user has entered their dn42 email address
+    email_addresses = session.get('email_addresses')
+    if not email_addresses:
+        return redirect(url_for('enter_asn'))
+
+    form = EmailForm()
+
+    # loop through the email addresses and add them (as a record) to the form's email choices
+    form.email.choices = [(index, email) for index, email in enumerate(email_addresses)]
+
+    if form.validate_on_submit():
+        selected_email = email_addresses[form.email.data]
+
+        # TODO: Generate a verification code and send it to the selected email address
+        # send_verification_email(selected_email, verification_code)
+        verification_code = "TEST"
+
+        # Store the selected email and verification code in the session for later verification
+
+        session['selected_email'] = selected_email
+        session['verification_code'] = verification_code
+        return redirect(url_for('verify_email'))
+
+    return render_template('login/select_email.html', form=form)
+
+
+@app.route('/enter_asn', methods=['GET', 'POST'])
+def enter_asn():
+    form = ASNForm()
+    if form.validate_on_submit():
+
+        session['asn'] = form.asn.data.strip()
+
+        # session['email_addresses'] = dn42_api.get_admins_emails(dn42_api.get_aut_num_admins(session["asn"]))
+        session['email_addresses'] = dn42_api.get_persons_emails(dn42_api.get_aut_num_bgp_persons(form.asn.data.strip()))
+
+        return redirect(url_for('select_email'))
+
+    return render_template('login/enter_asn.html', form=form)
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('enter_asn'))
+
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template('login/profile.html', username=current_user.id, asn=current_user.asn)
+
+
 
 
 if __name__ == "__main__":
