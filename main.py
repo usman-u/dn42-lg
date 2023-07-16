@@ -447,12 +447,13 @@ def load_user(user_id):
 
 
 def validate_asn(form, field):
-    asn = field.data
+    asn = field.data.strip()
 
     asn = asn.upper()
 
     if not asn.startswith("AS"):
-        raise ValidationError("ASN must start with 'AS'")
+        flash("ASN must start with'AS'", "danger")
+        raise ValidationError
     
     asn_number = asn[2:]
 
@@ -461,16 +462,25 @@ def validate_asn(form, field):
         asn_int = int(asn_number)
 
     except ValueError:
-        raise ValidationError("Invalid ASN range. Must be a valid DN42 BGP ASN. BGP person object(s) must have email(s).")
+        flash("Invalid ASN range. Must be a valid DN42 BGP ASN. BGP person object(s) must have email(s).", "danger")
+        raise ValidationError
 
     if asn_int < 1 or asn_int > 4294967295:
+        flash("Invalid ASN range. Must be a valid DN42 ASN.", "danger")
         raise ValidationError("Invalid ASN range. Must be a valid DN42 ASN.")
 
     if not dn42_api.aut_num_exists(asn):
+        flash("ASN not in DN42 database. Try Again.", "danger")
         raise ValidationError("ASN not in DN42 database. Try Again.")
+
+    person = dn42_api.get_aut_num_bgp_persons(asn)
     
-    if not dn42_api.get_persons_emails(dn42_api.get_aut_num_bgp_persons(asn)):
+    if not dn42_api.get_persons_emails(person):
+        flash("No emails found related to the entered ASN. Ensure your person objects in the DN42 database have emails.", "danger")
         raise ValidationError("No emails found related to the entered ASN. Ensure your person objects in the DN42 database have emails.")
+    
+    session["person"] = person
+
     
 
 
@@ -564,8 +574,9 @@ def enter_asn():
 
         session['asn'] = form.asn.data.strip()
 
-        # session['email_addresses'] = dn42_api.get_admins_emails(dn42_api.get_aut_num_admins(session["asn"]))
         session['email_addresses'] = dn42_api.get_persons_emails(dn42_api.get_aut_num_bgp_persons(form.asn.data.strip()))
+
+        flash(f"{session['asn']} entered & person(s): {' '.join(x for x in session['person'])} successfully looked up.", "success")
 
         return redirect(url_for('select_email'))
 
