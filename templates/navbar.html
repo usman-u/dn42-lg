@@ -19,10 +19,32 @@
                 </li>
             </div>
         </div>
+        <div class="navbar-nav ml-auto">
+            {% if current_user.is_authenticated %}
+                  <span class="navbar-text me-2">
+                    Logged in as <b>{{ current_user.email }}</b> of <i>{{ current_user.asn }}</i>
+                </span>
+
+                <form action="{{ url_for('profile') }}">
+                    <button type="submit" class="btn btn-outline-light me-2">Profile</button>
+                </form>
+
+                <form action="{{ url_for('logout') }}">
+                    <button type="submit" class="btn btn-outline-light me-2">Logout</button>
+                </form>
+
+            {% else %}
+                <form action="{{ url_for('enter_asn') }}">
+                    <button type="submit" class="btn btn-outline-light me-2 ">Sign Up</button>
+                </form>
+                <form action="{{ url_for('login') }}">
+                    <button type="submit" class="btn btn-outline-light me-2">Login</button>
+                </form>
+            {% endif %}
+        </div>
     </div>
 </nav>
 <br>
 <br>
 <br>
-
 </html>
