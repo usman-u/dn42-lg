@@ -516,14 +516,15 @@ class EmailForm(FlaskForm):
 
 class VerificationForm(FlaskForm):
     verification_code = StringField('Verification Code', validators=[DataRequired()])
-    password = StringField("Enter Your Password ", validators=[DataRequired()])
-    confirm_password = StringField("Confirm Your Password", validators=[DataRequired()])
+    password = PasswordField("Enter Your Password ", validators=[DataRequired()])
+    confirm_password = PasswordField("Confirm Your Password", validators=[DataRequired()])
     submit = SubmitField('Verify')
 
 class LoginForm(FlaskForm):
     email = StringField('Enter your email', validators=[DataRequired()])
-    password = StringField("Enter Your Password ", validators=[DataRequired()])
-    submit = SubmitField('Verify')
+    password = PasswordField("Enter Your Password ", validators=[DataRequired()])
+    submit = SubmitField('Log in')
+
 
 def generate_verification_code():
     code = random.randint(100000, 999999)
@@ -550,7 +551,7 @@ def verify_email():
     form = VerificationForm()
 
     if form.validate_on_submit():
-        entered_code = form.verification_code.data
+        entered_code = form.verification_code.data.strip()
         stored_code = session.get('verification_code')
         stored_timestamp = session.get('timestamp')
 
@@ -618,6 +619,12 @@ def select_email():
 
     if form.validate_on_submit():
         selected_email = email_addresses[form.email.data]
+
+        # Checks if the email address is already registered
+        existing_user = User.query.filter_by(email=selected_email).first()
+        if existing_user:
+            flash(f"{selected_email} already registered. Please login.", "danger")
+            return redirect(url_for('login'))
         
 
         # TODO: error handling for email credentials
