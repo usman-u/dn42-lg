@@ -488,6 +488,10 @@ class VerificationForm(FlaskForm):
 
 @app.route('/verify_email', methods=['GET', 'POST'])
 def verify_email():
+
+    if current_user.is_authenticated:
+        return redirect(url_for('profile'))
+
     if 'selected_email' not in session or 'verification_code' not in session:
         return redirect(url_for('enter_asn'))
     
@@ -518,6 +522,10 @@ def verify_email():
 @app.route('/select_email', methods=['GET', 'POST'])
 def select_email():
 
+    if current_user.is_authenticated:
+        return redirect(url_for('profile'))
+
+
     # gets email addrs from current user session
     # checks whether the user has entered their dn42 email address
     email_addresses = session.get('email_addresses')
@@ -547,6 +555,10 @@ def select_email():
 
 @app.route('/enter_asn', methods=['GET', 'POST'])
 def enter_asn():
+    
+    if current_user.is_authenticated:
+        return redirect(url_for('profile'))
+
     form = ASNForm()
     if form.validate_on_submit():
 
