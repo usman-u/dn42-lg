@@ -1,9 +1,10 @@
 from flask import Flask, redirect, url_for, render_template, flash, request, session
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, BooleanField, SelectField, RadioField, PasswordField
-from wtforms.validators import DataRequired, Email, InputRequired, ValidationError
+from wtforms.validators import DataRequired, Email, InputRequired, ValidationError, EqualTo
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
 from flask_bootstrap import Bootstrap
 from flask_mail import Mail, Message
 from datetime import datetime
@@ -31,6 +32,10 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
 mail = Mail(app)
 
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
 
 # from auth import auth
 # app.register_blueprint(auth)
@@ -440,22 +445,27 @@ def page_not_found(error):
 
 login_manager = LoginManager(app)
 
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    asn = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(300), nullable=False)
 
-class User(UserMixin):
-    def __init__(self, id, asn):
-        self.id = id
-        self.asn=asn
+    def __repr__(self):
+        return '<User %r>' % self.email
+
+    def get_id(self):
+        return str(self.id)
+
 
 @login_manager.unauthorized_handler
 def unauthorized_hanlder():
-    return redirect(url_for('enter_asn'))
+    flash("You aren't logged in or aren't authorised to access this page.", "warning")
+    return redirect(url_for('login'))
 
 @login_manager.user_loader
 def load_user(user_id):
-    # Fetch the user from your data source based on the user_id
-    # Return an instance of the User model
-    asn = session['asn']
-    return User(user_id, asn)
+    return User.query.get(user_id)
 
 
 def validate_asn(form, field):
@@ -506,6 +516,13 @@ class EmailForm(FlaskForm):
 
 class VerificationForm(FlaskForm):
     verification_code = StringField('Verification Code', validators=[DataRequired()])
+    password = StringField("Enter Your Password ", validators=[DataRequired()])
+    confirm_password = StringField("Confirm Your Password", validators=[DataRequired()])
+    submit = SubmitField('Verify')
+
+class LoginForm(FlaskForm):
+    email = StringField('Enter your email', validators=[DataRequired()])
+    password = StringField("Enter Your Password ", validators=[DataRequired()])
     submit = SubmitField('Verify')
 
 def generate_verification_code():
@@ -518,7 +535,7 @@ def has_code_expired(timestamp):
     if timestamp == None:
         return False
     current_time = time.time()
-    return (current_time - timestamp) > 60  # 300 seconds = 5 minutes
+    return (current_time - timestamp) > 300  # 300 seconds = 5 minutes
 
 @app.route('/verify_email', methods=['GET', 'POST'])
 def verify_email():
@@ -543,10 +560,23 @@ def verify_email():
         elif entered_code == session['verification_code'] and (not has_code_expired(session['timestamp'])):
             session['verified_email'] = session['selected_email']
             
+
+            if form.password.data != form.confirm_password.data:
+                flash("Passwords must match!", "danger")
+                return redirect(url_for("verify_email"))
+
+            hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+
             # Creates an intance of User with the verified email
             # And logs them in, using flask_login
-            user = User(session['verified_email'], session['asn'])
-            login_user(user)
+            new_user = User(email=session["verified_email"], password=hashed_password, asn=session["asn"])
+            db.session.add(new_user)
+            db.session.commit()
+
+            # user = User(session['verified_email'], session['asn'])
+            login_user(new_user)
+
+            # return "Done"
 
             flash(f"Authentication Success. You're logged in as {session['verified_email']} of {session['asn']}", "success")
 
@@ -593,7 +623,7 @@ def select_email():
         # TODO: error handling for email credentials
         verification_code, timestamp = generate_verification_code()
         message = Message('USMAN BGP PEERING Verification Code', sender='dn42verification@usman.network', recipients=[selected_email])
-        message.body = f'Your verification code is: {verification_code}'
+        message.body = f' Hello!. Your verification code is: {verification_code}.  It will expire in 5 minutes.'
         mail.send(message)
         flash(f"Message sent to {selected_email}. Please check your spam!", "success")
 
@@ -632,19 +662,39 @@ def enter_asn():
 
     return render_template('login/enter_asn.html', form=form)
 
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        
+        if user and bcrypt.check_password_hash(user.password, form.password.data):
+            login_user(user)
+            flash(f"Authentication Success. You're logged in as {user.email} of {user.asn}", "success")
+            return redirect(url_for('profile'))
+        else:
+            flash("Login Unsuccessful. Please check email and password", "danger")
+
+    return render_template('login/login.html', form=form)
+
+
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('enter_asn'))
+    return redirect(url_for('login'))
 
 @app.route('/profile')
 @login_required
 def profile():
-    return render_template('login/profile.html', username=current_user.id, asn=current_user.asn)
+    return render_template('login/profile.html', username=current_user.email, asn=current_user.asn)
 
 
 
 
 if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
     app.run(debug=True, threaded=False, host="0.0.0.0")
