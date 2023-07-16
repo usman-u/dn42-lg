@@ -5,6 +5,7 @@ from wtforms.validators import DataRequired, Email, InputRequired, ValidationErr
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
+from flask_mail import Mail, Message
 from datetime import datetime
 from net_automation import Vyos
 import os
@@ -14,11 +15,22 @@ import dn42_whois
 from inventory import routers
 from validations import is_valid_address, is_valid_network
 import dn42_api
+import time
+import random
 
 
 app = Flask(__name__)  # create an instance of the Flask class
 app.config["SECRET_KEY"] = os.getenv("flask_secret_key")  # secret key
 Bootstrap(app)
+
+app.config['MAIL_SERVER']=os.getenv("MAIL_SERVER")
+app.config['MAIL_PORT'] = os.getenv("MAIL_PORT")
+app.config['MAIL_USERNAME'] = os.getenv("MAIL_USERNAME")
+app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD")
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+mail = Mail(app)
+
 
 # from auth import auth
 # app.register_blueprint(auth)
@@ -496,6 +508,18 @@ class VerificationForm(FlaskForm):
     verification_code = StringField('Verification Code', validators=[DataRequired()])
     submit = SubmitField('Verify')
 
+def generate_verification_code():
+    code = random.randint(100000, 999999)
+    timestamp = time.time()
+    return str(code), timestamp
+
+# Check if the verification code has expired (valid for 5 minutes)
+def has_code_expired(timestamp):
+    if timestamp == None:
+        return False
+    current_time = time.time()
+    return (current_time - timestamp) > 60  # 300 seconds = 5 minutes
+
 @app.route('/verify_email', methods=['GET', 'POST'])
 def verify_email():
 
@@ -510,10 +534,13 @@ def verify_email():
 
     if form.validate_on_submit():
         entered_code = form.verification_code.data
+        stored_code = session.get('verification_code')
+        stored_timestamp = session.get('timestamp')
 
-        # Successful verification. 
-        # Where emailed code = Entered Code 
-        if entered_code == session['verification_code']:
+        if (entered_code is None) or (stored_code is None) or has_code_expired(stored_timestamp):
+            flash('Verification code has expired. Please request a new code or contact usman@usman.network for support.', 'danger')
+        
+        elif entered_code == session['verification_code'] and (not has_code_expired(session['timestamp'])):
             session['verified_email'] = session['selected_email']
             
             # Creates an intance of User with the verified email
@@ -521,9 +548,15 @@ def verify_email():
             user = User(session['verified_email'], session['asn'])
             login_user(user)
 
+            flash(f"Authentication Success. You're logged in as {session['verified_email']} of {session['asn']}", "success")
+
+            session.pop('verification_code', None)
+            session.pop('timestamp', None)
+
+
             return redirect(url_for('profile'))
         else:
-            form.verification_code.errors.append('Invalid verification code. Recheck your code or contact dn42peering@usman.network')
+            flash("Invalid verification code. Recheck your code or contact usman@usman.network", "danger")
 
     return render_template('login/verify_email.html', form=form)
 
@@ -536,28 +569,39 @@ def select_email():
         return redirect(url_for('profile'))
 
 
-    # gets email addrs from current user session
-    # checks whether the user has entered their dn42 email address
+    # Gets email addrs from current user session
+    # Checks whether the user has entered their dn42 email address
     email_addresses = session.get('email_addresses')
     if not email_addresses:
         return redirect(url_for('enter_asn'))
 
+    # If code has been generated and emailed to the user (& code not expired)
+    # Then, redirect then back to the verify_email page
+    if (session.get("verification_code") != None) and (not has_code_expired(session.get("timestamp"))):
+        flash("You've already generated a code that hasn't expired. Check your email or request a new code.", "warning")
+        return redirect(url_for('verify_email'))
+
     form = EmailForm()
 
-    # loop through the email addresses and add them (as a record) to the form's email choices
+    # loops through the email addresses and add them (as a record) to the form's email choices
     form.email.choices = [(index, email) for index, email in enumerate(email_addresses)]
 
     if form.validate_on_submit():
         selected_email = email_addresses[form.email.data]
+        
 
-        # TODO: Generate a verification code and send it to the selected email address
-        # send_verification_email(selected_email, verification_code)
-        verification_code = "TEST"
+        # TODO: error handling for email credentials
+        verification_code, timestamp = generate_verification_code()
+        message = Message('USMAN BGP PEERING Verification Code', sender='dn42verification@usman.network', recipients=[selected_email])
+        message.body = f'Your verification code is: {verification_code}'
+        mail.send(message)
+        flash(f"Message sent to {selected_email}. Please check your spam!", "success")
 
-        # Store the selected email and verification code in the session for later verification
-
+        # Stores the selected email and verification code in the session for later verification
         session['selected_email'] = selected_email
         session['verification_code'] = verification_code
+        session['timestamp'] = timestamp
+
         return redirect(url_for('verify_email'))
 
     return render_template('login/select_email.html', form=form)
@@ -568,6 +612,12 @@ def enter_asn():
     
     if current_user.is_authenticated:
         return redirect(url_for('profile'))
+    
+    # If code has been generated and emailed to the user (& code not expired)
+    # redirect then back to the verify_email page
+    if (session.get("verification_code") != None) and (not has_code_expired(session.get("timestamp"))):
+        flash("You've already generated a code that hasn't expired. Check your email or request a new code.", "warning")
+        return redirect(url_for('verify_email'))
 
     form = ASNForm()
     if form.validate_on_submit():
