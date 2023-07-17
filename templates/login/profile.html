@@ -4,9 +4,42 @@
 {% block title %} Profile {% endblock %}
 
 {% block content %}
-  <div class="container">
-    <h1>Your Profile</h1>
-    <p>Welcome, <b>{{ username }}!</b> of  <i>{{ asn }}</i></p>
-    <a href="{{ url_for('logout') }}" class="btn btn-primary">Logout</a>
-  </div>
+
+  <body>
+
+  <h1>User Profile</h1>
+
+  <hr>
+
+
+<div class="p-3 mb-5 bg-body rounded shadow-sm">
+
+    <table  class="bgp table table-hover">
+    <tr>
+      <th>Email</th>
+      <th>ASN</th>
+      <th>Date Created</th>
+    </tr>
+    <tr>
+      <td>{{ current_user.email }}</td>
+      <td>{{ current_user.asn }}</td>
+      <td>{{ current_user.date_created.strftime("%Y-%m-%d %H:%M:%S UTC") }}</td>
+    </tr>
+  </table>
+</div>
+
+<a href="{{ url_for('change_password') }}" class="btn btn-primary">Change Password</a>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $('.table').DataTable({
+            responsive: true,
+            paging: false, info: false, searching: false,
+            
+        });
+    })
+</script>
 {% endblock %}

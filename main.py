@@ -450,6 +450,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     asn = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(300), nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     def __repr__(self):
         return '<User %r>' % self.email
@@ -525,6 +526,11 @@ class LoginForm(FlaskForm):
     password = PasswordField("Enter Your Password ", validators=[DataRequired()])
     submit = SubmitField('Log in')
 
+class ChangePasswordForm(FlaskForm):
+    current_password = PasswordField('Current Password', validators=[DataRequired()])
+    new_password = PasswordField('New Password', validators=[DataRequired()])
+    confirm_password = PasswordField('Confirm New Password', validators=[DataRequired()])
+    submit = SubmitField('Change Password')
 
 def generate_verification_code():
     code = random.randint(100000, 999999)
@@ -686,6 +692,38 @@ def login():
 
     return render_template('login/login.html', form=form)
 
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    form = ChangePasswordForm()
+
+    if form.validate_on_submit():
+        current_password = form.current_password.data
+        new_password = form.new_password.data
+
+        # Verify the current password matches the user's stored password
+        if bcrypt.check_password_hash(current_user.password, current_password):
+
+            # Verify the new password matches the confirm password
+            if new_password != form.confirm_password.data:
+                flash("Passwords must match!", "danger")
+                return redirect(url_for("change_password"))
+
+            # Hash new password
+            # Commit changes to db
+            hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+            current_user.password = hashed_password
+
+            # Save the updated user information in the database
+            db.session.commit()
+
+            flash('Password successfully changed!', 'success')
+            return redirect(url_for('profile'))
+        else:
+            flash('Incorrect current password. Please try again.', 'danger')
+
+    return render_template('login/change_password.html', form=form)
+
 
 @app.route('/logout')
 @login_required
@@ -696,7 +734,7 @@ def logout():
 @app.route('/profile')
 @login_required
 def profile():
-    return render_template('login/profile.html', username=current_user.email, asn=current_user.asn)
+    return render_template('login/profile.html', current_user=current_user)
 
 
 
