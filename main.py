@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_bootstrap import Bootstrap
 from flask_mail import Mail, Message
+from flask_migrate import Migrate
 from datetime import datetime
 from net_automation import Vyos
 import os
@@ -36,6 +37,7 @@ mail = Mail(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
+migrate = Migrate(app, db)
 
 # from auth import auth
 # app.register_blueprint(auth)
@@ -451,6 +453,7 @@ class User(UserMixin, db.Model):
     asn = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(300), nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    admin = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return '<User %r>' % self.email
