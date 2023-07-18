@@ -1,6 +1,6 @@
 from flask import Flask, redirect, url_for, render_template, flash, request, session
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, BooleanField, SelectField, RadioField, PasswordField
+from wtforms import StringField, SubmitField, BooleanField, SelectField, RadioField, PasswordField, EmailField
 from wtforms.validators import DataRequired, Email, InputRequired, ValidationError, EqualTo
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask_sqlalchemy import SQLAlchemy
@@ -19,6 +19,7 @@ from validations import is_valid_address, is_valid_network
 import dn42_api
 import time
 import random
+import string
 
 
 app = Flask(__name__)  # create an instance of the Flask class
@@ -450,7 +451,7 @@ login_manager = LoginManager(app)
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    asn = db.Column(db.String(80), unique=True, nullable=False)
+    asn = db.Column(db.String(80), unique=False, nullable=True)
     password = db.Column(db.String(300), nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     admin = db.Column(db.Boolean, default=False)
@@ -525,7 +526,7 @@ class VerificationForm(FlaskForm):
     submit = SubmitField('Verify')
 
 class LoginForm(FlaskForm):
-    email = StringField('Enter your email', validators=[DataRequired()])
+    email = EmailField('Enter your email', validators=[DataRequired()])
     password = PasswordField("Enter Your Password ", validators=[DataRequired()])
     submit = SubmitField('Log in')
 
@@ -534,6 +535,52 @@ class ChangePasswordForm(FlaskForm):
     new_password = PasswordField('New Password', validators=[DataRequired()])
     confirm_password = PasswordField('Confirm New Password', validators=[DataRequired()])
     submit = SubmitField('Change Password')
+
+
+
+# Edge case for if the admin wants to create a user with no ASN (offline user)
+# Only starts validating the input if the asn field is not empty
+def newuser_validate_asn(self, field):
+    if field.data:
+        asn = field.data.strip()
+
+        asn = asn.upper()
+
+        if not asn.startswith("AS"):
+            flash("ASN must start with'AS'", "danger")
+            raise ValidationError
+        
+        asn_number = asn[2:]
+
+
+        try:
+            asn_int = int(asn_number)
+
+        except ValueError:
+            flash("Invalid ASN range. Must be a valid DN42 BGP ASN. BGP person object(s) must have email(s).", "danger")
+            raise ValidationError
+
+        if asn_int < 1 or asn_int > 4294967295:
+            flash("Invalid ASN range. Must be a valid DN42 ASN.", "danger")
+            raise ValidationError("Invalid ASN range. Must be a valid DN42 ASN.")
+
+        if not dn42_api.aut_num_exists(asn):
+            flash("ASN not in DN42 database. Try Again.", "danger")
+            raise ValidationError("ASN not in DN42 database. Try Again.")
+
+        person = dn42_api.get_aut_num_bgp_persons(asn)
+        
+        if not dn42_api.get_persons_emails(person):
+            flash("No emails found related to the entered ASN. Ensure your person objects in the DN42 database have emails.", "danger")
+            raise ValidationError("No emails found related to the entered ASN. Ensure your person objects in the DN42 database have emails.")
+# For if the admin makes a user
+class AddUserForm(FlaskForm):
+    email = EmailField('Email', validators=[DataRequired(), Email()])
+    asn = StringField('ASN', validators=[newuser_validate_asn])
+    admin = BooleanField('Admin', default=False)
+    email_password = BooleanField('Email Randomly Generated Password', default=False)
+    submit = SubmitField('Create User')
+
 
 def generate_verification_code():
     code = random.randint(100000, 999999)
@@ -681,6 +728,10 @@ def enter_asn():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+
+    if current_user.is_authenticated:
+        flash(f"You're already logged in as {current_user.email}.", "warning")
+        return redirect(url_for('profile'))
     form = LoginForm()
 
     if form.validate_on_submit():
@@ -688,7 +739,12 @@ def login():
         
         if user and bcrypt.check_password_hash(user.password, form.password.data):
             login_user(user)
-            flash(f"Authentication Success. You're logged in as {user.email} of {user.asn}", "success")
+
+            flashed_message = f"Authentication Success. You're logged in as {user.email}"
+            if user.asn:
+                flashed_message += f" of {user.asn}"
+
+            flash(flashed_message, "success")
             return redirect(url_for('profile'))
         else:
             flash("Login Unsuccessful. Please check email and password", "danger")
@@ -728,6 +784,45 @@ def change_password():
     return render_template('login/change_password.html', form=form)
 
 
+@app.route('/admin/user_management/add_user', methods=['GET', 'POST'])
+@login_required
+def add_user():
+
+    if not current_user.admin:
+        flash("You aren't authorised to access this page.", "warning")
+        return redirect(url_for('profile'))
+    
+
+    form = AddUserForm()
+    if form.validate_on_submit():
+
+        random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(10))
+
+        user = User(email=form.email.data, asn=form.asn.data, admin=form.admin.data, password=bcrypt.generate_password_hash(random_password).decode('utf-8'))
+        db.session.add(user)
+        db.session.commit()
+
+        if form.email_password.data:
+            message = Message('usman.dn42 User Registration', sender='dn42registration@usman.network', recipients=[form.email.data.strip()])
+            message.body = f' Hello! Your account has been created. Your temporary password is: {random_password}. Please login at https://usman.dn42/login. Please change your password after logging in.'
+            mail.send(message)
+
+        flashed_message = f"{form.email.data.strip()} added successfully"
+        if form.asn.data:
+            flashed_message += f", with ASN {form.asn.data.strip()}"
+        if form.admin.data:
+            flashed_message += ", as an admin"
+        if form.email_password.data:
+            flashed_message += f", and emailed their password to {form.email.data.strip()} "
+
+        flash(flashed_message, "success")
+        flash(f"Randomly generated password is {random_password}", "success")
+
+        return redirect(url_for('user_management'))
+    
+    return render_template('user_management/add_user.html', form=form)
+
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -739,6 +834,26 @@ def logout():
 def profile():
     return render_template('login/profile.html', current_user=current_user)
 
+
+@app.route('/admin')
+@login_required
+def admin():
+    if not current_user.admin:
+        flash("You aren't authorised to access this page.", "warning")
+        return redirect(url_for('profile'))
+    return render_template('login/admin.html', current_user=current_user)
+
+
+@app.route('/admin/user_management')
+@login_required
+def user_management():
+    if not current_user.admin:
+        flash("You aren't authorised to access this page.", "warning")
+        return redirect(url_for('profile'))
+
+    users = User.query.all()
+
+    return render_template('user_management/user_management.html', current_user=current_user, users=users)
 
 
 
