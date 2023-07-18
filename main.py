@@ -456,12 +456,23 @@ class User(UserMixin, db.Model):
     date_created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     admin = db.Column(db.Boolean, default=False)
     password_changed_by_admin = db.Column(db.Boolean, default=False)
+    logs = db.relationship('UserLog', backref='user', lazy=True)
+
+class UserLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    login_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    ip_address = db.Column(db.String(200), nullable=False)
+    function_used = db.Column(db.String(100), nullable=False)
+    query = db.Column(db.String(200))
+
 
     def __repr__(self):
         return '<User %r>' % self.email
 
     def get_id(self):
         return str(self.id)
+
 
 
 @login_manager.unauthorized_handler
@@ -737,9 +748,13 @@ def login():
 
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
-        
+
         if user and bcrypt.check_password_hash(user.password, form.password.data):
             login_user(user)
+
+            user_log = UserLog(user=current_user, login_time=datetime.utcnow(), ip_address=request.remote_addr, function_used='login')
+            db.session.add(user_log)
+            db.session.commit()
 
             flashed_message = f"Authentication Success. You're logged in as {user.email}"
             if user.asn:
@@ -839,6 +854,16 @@ def add_user():
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
+@app.before_request
+def log_function_access():
+    if current_user.is_authenticated:
+        if request.endpoint != 'static':
+            function_name = request.endpoint
+            user_log = UserLog(user=current_user, login_time=datetime.utcnow(), ip_address=request.remote_addr, function_used=function_name, query=str(request.url_rule))
+            db.session.add(user_log)
+            db.session.commit()
+
 
 @app.route('/profile')
 @login_required
