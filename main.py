@@ -455,6 +455,7 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(300), nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     admin = db.Column(db.Boolean, default=False)
+    password_changed_by_admin = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return '<User %r>' % self.email
@@ -744,6 +745,11 @@ def login():
             if user.asn:
                 flashed_message += f" of {user.asn}"
 
+            if current_user.password_changed_by_admin:
+                flashed_message += ". Please change your password now."
+                flash(flashed_message, "warning")
+                return redirect(url_for('change_password'))
+
             flash(flashed_message, "success")
             return redirect(url_for('profile'))
         else:
@@ -772,6 +778,11 @@ def change_password():
             # Commit changes to db
             hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
             current_user.password = hashed_password
+            
+            # Remove the password_changed_by_admin flag, i.e. if the user is an 'admin-added' user, and have just changed their password
+            # Will stop them being redirected to the change password page on login
+            if current_user.password_changed_by_admin:
+                current_user.password_changed_by_admin = False
 
             # Save the updated user information in the database
             db.session.commit()
@@ -798,7 +809,7 @@ def add_user():
 
         random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(10))
 
-        user = User(email=form.email.data, asn=form.asn.data, admin=form.admin.data, password=bcrypt.generate_password_hash(random_password).decode('utf-8'))
+        user = User(email=form.email.data, asn=form.asn.data, admin=form.admin.data, password=bcrypt.generate_password_hash(random_password).decode('utf-8'), password_changed_by_admin=True)
         db.session.add(user)
         db.session.commit()
 
