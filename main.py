@@ -605,7 +605,7 @@ def has_code_expired(timestamp):
     current_time = time.time()
     return (current_time - timestamp) > 300  # 300 seconds = 5 minutes
 
-@app.route('/verify_email', methods=['GET', 'POST'])
+@app.route('/verify_email/', methods=['GET', 'POST'])
 def verify_email():
 
     if current_user.is_authenticated:
@@ -660,7 +660,7 @@ def verify_email():
 
 
 
-@app.route('/select_email', methods=['GET', 'POST'])
+@app.route('/select_email/', methods=['GET', 'POST'])
 def select_email():
 
     if current_user.is_authenticated:
@@ -711,7 +711,7 @@ def select_email():
     return render_template('login/select_email.html', form=form)
 
 
-@app.route('/enter_asn', methods=['GET', 'POST'])
+@app.route('/enter_asn/', methods=['GET', 'POST'])
 def enter_asn():
     
     if current_user.is_authenticated:
@@ -737,7 +737,7 @@ def enter_asn():
     return render_template('login/enter_asn.html', form=form)
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login/', methods=['GET', 'POST'])
 def login():
 
     if current_user.is_authenticated:
@@ -771,7 +771,7 @@ def login():
 
     return render_template('login/login.html', form=form)
 
-@app.route('/change_password', methods=['GET', 'POST'])
+@app.route('/change_password/', methods=['GET', 'POST'])
 @login_required
 def change_password():
     form = ChangePasswordForm()
@@ -809,7 +809,7 @@ def change_password():
     return render_template('login/change_password.html', form=form)
 
 
-@app.route('/admin/user_management/add_user', methods=['GET', 'POST'])
+@app.route('/admin/user_management/add_user/', methods=['GET', 'POST'])
 @login_required
 def add_user():
 
@@ -848,7 +848,7 @@ def add_user():
     return render_template('user_management/add_user.html', form=form)
 
 
-@app.route('/logout')
+@app.route('/logout/')
 @login_required
 def logout():
     logout_user()
@@ -864,13 +864,13 @@ def log_function_access():
             db.session.add(user_log)
             db.session.commit()
 
-@app.route('/profile')
+@app.route('/profile/')
 @login_required
 def profile():
     return render_template('login/profile.html', current_user=current_user)
 
 
-@app.route('/admin')
+@app.route('/admin/')
 @login_required
 def admin():
     if not current_user.admin:
